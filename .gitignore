@@ -1,0 +1,18 @@
+# Ignore Data
+data/
+!data/.gitkeep
+
+# Ignore Virtual Env
+venv/
+.env
+
+# Ignore Python cache & IDEs
+__pycache__/
+*.pyc
+.ipynb_checkpoints
+.vscode/
+.idea/
+
+# Ignore Experiments
+experiments/
+*.log
