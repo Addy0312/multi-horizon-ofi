@@ -1,0 +1,49 @@
+{
+  "config": {
+    "type": "deep_seq",
+    "hidden_size": 64,
+    "num_layers": 2,
+    "dropout": 0.3,
+    "bidirectional": false,
+    "lr": 0.001,
+    "epochs": 2,
+    "batch_size": 256,
+    "seq_len": 100
+  },
+  "description": "LSTM (Kolm et al. 2023)",
+  "n_params": 68620,
+  "training_time_s": 181.97352981567383,
+  "test_metrics": {
+    "h10_accuracy": 0.5450678060561025,
+    "h10_f1_macro": 0.3131574213608317,
+    "h10_f1_weighted": 0.5611324538042041,
+    "h10_precision_macro": 0.3292341659797318,
+    "h10_recall_macro": 0.37637703073193246,
+    "h20_accuracy": 0.20178339216050528,
+    "h20_f1_macro": 0.20432784972840912,
+    "h20_f1_weighted": 0.09715215750120919,
+    "h20_precision_macro": 0.13458484154593822,
+    "h20_recall_macro": 0.42465850120809395,
+    "h50_accuracy": 0.27815344603381015,
+    "h50_f1_macro": 0.2593110817146076,
+    "h50_f1_weighted": 0.16736686256426994,
+    "h50_precision_macro": 0.18545669715426927,
+    "h50_recall_macro": 0.43113923841215085,
+    "h100_accuracy": 0.3273639234627531,
+    "h100_f1_macro": 0.2892857041683958,
+    "h100_f1_weighted": 0.22209296418072352,
+    "h100_precision_macro": 0.21990890184779102,
+    "h100_recall_macro": 0.42762857473377863,
+    "test_loss": 1.0576900243759155
+  },
+  "history": {
+    "train_loss": [
+      1.0730173558516283,
+      1.0632755634523987
+    ],
+    "val_loss": [
+      1.0908138254807458,
+      1.074643691569143
+    ]
+  }
+}
