@@ -1,5 +1,6 @@
-# Ignore Data
-data/
+# Ignore Data (raw & processed)
+/data/raw/
+/data/processed/
 !data/.gitkeep
 
 # Ignore Virtual Env
@@ -9,10 +10,11 @@ venv/
 # Ignore Python cache & IDEs
 __pycache__/
 *.pyc
-.ipynb_checkpoints
+.ipynb_checkpoints/
 .vscode/
 .idea/
 
 # Ignore Experiments
 experiments/
 *.log
+checkpoints/
