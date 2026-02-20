@@ -17,6 +17,9 @@ torch>=2.0.0
 torchvision
 torchaudio
 
+# Data Providers
+databento>=0.40.0   # Nasdaq TotalView (XNAS.ITCH) MBP-10 data
+
 # Utilities
 tqdm               # Progress bars
 joblib             # Parallel processing for data cleaning
