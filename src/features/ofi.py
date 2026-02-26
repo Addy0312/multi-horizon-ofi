@@ -38,10 +38,10 @@ def compute_single_level_ofi(df: pd.DataFrame) -> pd.Series:
     pd.Series
         OFI values (length = len(df), first row = 0).
     """
-    bp = df["bid_price_1"].values
-    bs = df["bid_size_1"].values
-    ap = df["ask_price_1"].values
-    as_ = df["ask_size_1"].values
+    bp = df["bid_price_1"].values.astype(np.float64)
+    bs = df["bid_size_1"].values.astype(np.float64)
+    ap = df["ask_price_1"].values.astype(np.float64)
+    as_ = df["ask_size_1"].values.astype(np.float64)
 
     n = len(df)
     ofi = np.zeros(n, dtype=np.float64)
@@ -77,6 +77,12 @@ def _level_ofi_arrays(
     """Vectorised single-level OFI on raw numpy arrays (no pandas overhead)."""
     n = len(bp)
     ofi = np.zeros(n, dtype=np.float64)
+
+    # Cast to float64 to prevent uint32 overflow on subtraction
+    bp = bp.astype(np.float64)
+    bs = bs.astype(np.float64)
+    ap = ap.astype(np.float64)
+    as_ = as_.astype(np.float64)
 
     delta_bid = np.where(
         bp[1:] > bp[:-1],

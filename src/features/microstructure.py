@@ -31,8 +31,10 @@ def compute_volume_imbalance(df: pd.DataFrame) -> pd.Series:
 
     Ranges from −1 (all ask) to +1 (all bid).
     """
-    total = df["bid_size_1"] + df["ask_size_1"]
-    vi = (df["bid_size_1"] - df["ask_size_1"]) / total.replace(0, np.nan)
+    bid_s = df["bid_size_1"].astype(np.float64)
+    ask_s = df["ask_size_1"].astype(np.float64)
+    total = bid_s + ask_s
+    vi = (bid_s - ask_s) / total.replace(0, np.nan)
     return vi.fillna(0.0).rename("volume_imbalance")
 
 
@@ -45,10 +47,12 @@ def compute_weighted_mid_price(df: pd.DataFrame) -> pd.Series:
     When bid_size is large relative to ask_size, the WMP is pulled
     toward the ask (price is about to rise).
     """
-    total = df["bid_size_1"] + df["ask_size_1"]
+    bid_s = df["bid_size_1"].astype(np.float64)
+    ask_s = df["ask_size_1"].astype(np.float64)
+    total = bid_s + ask_s
     wmp = (
-        df["ask_price_1"] * df["bid_size_1"]
-        + df["bid_price_1"] * df["ask_size_1"]
+        df["ask_price_1"] * bid_s
+        + df["bid_price_1"] * ask_s
     ) / total.replace(0, np.nan)
     return wmp.fillna(compute_mid_price(df)).rename("weighted_mid_price")
 
@@ -59,8 +63,8 @@ def compute_book_depth(df: pd.DataFrame, max_level: int = 5) -> pd.DataFrame:
 
     Returns bid_depth, ask_depth, total_depth.
     """
-    bid_depth = sum(df[f"bid_size_{i}"] for i in range(1, max_level + 1))
-    ask_depth = sum(df[f"ask_size_{i}"] for i in range(1, max_level + 1))
+    bid_depth = sum(df[f"bid_size_{i}"].astype(np.float64) for i in range(1, max_level + 1))
+    ask_depth = sum(df[f"ask_size_{i}"].astype(np.float64) for i in range(1, max_level + 1))
     return pd.DataFrame(
         {
             "bid_depth": bid_depth,
@@ -79,9 +83,10 @@ def compute_depth_imbalance(
         DI = (Σ bid_size_i − Σ ask_size_i) / (Σ bid_size_i + Σ ask_size_i)
     """
     depth = compute_book_depth(df, max_level)
-    di = (depth["bid_depth"] - depth["ask_depth"]) / depth[
-        "total_depth"
-    ].replace(0, np.nan)
+    bid_d = depth["bid_depth"].astype(np.float64)
+    ask_d = depth["ask_depth"].astype(np.float64)
+    total_d = depth["total_depth"].astype(np.float64)
+    di = (bid_d - ask_d) / total_d.replace(0, np.nan)
     return di.fillna(0.0).rename("depth_imbalance")
 
 
