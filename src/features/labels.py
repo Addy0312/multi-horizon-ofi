@@ -180,6 +180,67 @@ def make_classification_labels(
     return pd.DataFrame(result, index=df.index)
 
 
+def make_fixed_threshold_classification_labels(
+    df: pd.DataFrame,
+    horizons: List[int] | None = None,
+    alpha: float = 0.002,
+    use_smoothing: bool = True,
+) -> pd.DataFrame:
+    """
+    Create 3-class labels using a fixed threshold, matching FI-2010 practice.
+
+    This follows the Wallbridge/TransLOB setup where the class threshold is
+    a fixed alpha (default 0.002) rather than an adaptive alpha * sigma rule.
+
+    Label mapping:
+        0 = DOWN, 1 = STATIONARY, 2 = UP
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Preprocessed LOB dataframe.
+    horizons : list of int
+        Forecast horizons.
+    alpha : float
+        Fixed decision threshold for r_k(t).
+    use_smoothing : bool
+        If True, compute future average mid-price over k events.
+        If False, use point forecast m_{t+k}.
+
+    Returns
+    -------
+    pd.DataFrame
+        Columns: label_10, label_20, ... with values in {0, 1, 2}.
+    """
+    if horizons is None:
+        horizons = DEFAULT_HORIZONS
+
+    m = mid_price(df)
+    result = {}
+
+    for k in horizons:
+        if use_smoothing:
+            future_m = _smoothed_mid(m, k)
+        else:
+            future_m = np.empty_like(m)
+            future_m[:] = np.nan
+            if k < len(m):
+                future_m[: len(m) - k] = m[k:]
+
+        # r_k(t) = (m_plus_k(t) - p(t)) / p(t)
+        pct_change = (future_m - m) / m
+
+        labels = np.full(len(m), np.nan)
+        labels[pct_change > alpha] = 2
+        labels[pct_change < -alpha] = 0
+        mask = (~np.isnan(pct_change)) & np.isnan(labels)
+        labels[mask] = 1
+
+        result[f"label_{k}"] = labels
+
+    return pd.DataFrame(result, index=df.index)
+
+
 # ──────────────────────────────────────────────────────────────────────────
 # Convenience: build everything at once
 # ──────────────────────────────────────────────────────────────────────────
