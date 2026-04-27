@@ -1,0 +1,123 @@
+{
+  "timestamp": "2026-04-11T10:54:57.656205",
+  "mode": "day_by_day_streaming_deep",
+  "architecture": "dilated_transformer",
+  "tickers": [
+    "AAPL",
+    "AMZN",
+    "GOOG",
+    "MSFT",
+    "TSLA"
+  ],
+  "horizons": [
+    10,
+    20,
+    50,
+    100
+  ],
+  "seq_len": 100,
+  "alpha": 5e-05,
+  "train_config": {
+    "epochs": 1,
+    "batch_size": 64,
+    "lr": 0.0002,
+    "weight_decay": 0.0001,
+    "grad_clip": 1.0,
+    "amp": true,
+    "device": "cuda"
+  },
+  "sampling": {
+    "train_file_fraction": 0.8,
+    "base_subsample": 8,
+    "high_pressure_subsample": 16,
+    "critical_pressure_subsample": 32,
+    "max_rows_per_day_train": 12000,
+    "max_rows_per_day_eval": 16000,
+    "max_files_per_ticker": 5
+  },
+  "files": {
+    "train_files": 20,
+    "eval_files": 5,
+    "days_fitted": 20
+  },
+  "train_rows_seen": {
+    "h10": 240000,
+    "h20": 240000,
+    "h50": 240000,
+    "h100": 240000
+  },
+  "eval_rows_seen": {
+    "h10": 80000,
+    "h20": 80000,
+    "h50": 80000,
+    "h100": 80000
+  },
+  "train_class_counts": {
+    "h10": [
+      11197,
+      217355,
+      11448
+    ],
+    "h20": [
+      22668,
+      193983,
+      23349
+    ],
+    "h50": [
+      47956,
+      143251,
+      48793
+    ],
+    "h100": [
+      67613,
+      104425,
+      67962
+    ]
+  },
+  "eval_class_counts": {
+    "h10": [
+      3410,
+      73106,
+      3484
+    ],
+    "h20": [
+      6915,
+      65930,
+      7155
+    ],
+    "h50": [
+      14505,
+      50489,
+      15006
+    ],
+    "h100": [
+      21126,
+      37228,
+      21646
+    ]
+  },
+  "test_metrics": {
+    "h10_accuracy": 0.042625,
+    "h10_f1_macro": 0.02725492546856892,
+    "h10_f1_weighted": 0.0034852235942932504,
+    "h10_precision_macro": 0.014208333333333335,
+    "h10_recall_macro": 0.3333333333333333,
+    "h20_accuracy": 0.0864375,
+    "h20_f1_macro": 0.05304032675602601,
+    "h20_f1_weighted": 0.013754019731921995,
+    "h20_precision_macro": 0.0288125,
+    "h20_recall_macro": 0.3333333333333333,
+    "h50_accuracy": 0.1813125,
+    "h50_f1_macro": 0.10232262843235806,
+    "h50_f1_weighted": 0.05565711470292577,
+    "h50_precision_macro": 0.0604375,
+    "h50_recall_macro": 0.3333333333333333,
+    "h100_accuracy": 0.264075,
+    "h100_f1_macro": 0.139271799537211,
+    "h100_f1_weighted": 0.110334601388367,
+    "h100_precision_macro": 0.088025,
+    "h100_recall_macro": 0.3333333333333333
+  },
+  "model_path": "/content/drive/MyDrive/multi-horizon-ofi/model_weights/dilated_transformer_weights.pt",
+  "runtime_seconds": 103.1
+}

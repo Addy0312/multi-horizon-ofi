@@ -1,0 +1,91 @@
+{
+  "timestamp": "2026-04-11T10:25:24.932824",
+  "mode": "day_by_day_streaming",
+  "tickers": [
+    "AAPL",
+    "AMZN",
+    "GOOG",
+    "MSFT",
+    "TSLA"
+  ],
+  "horizons": [
+    10,
+    20,
+    50,
+    100
+  ],
+  "seq_len": 100,
+  "alpha": 5e-05,
+  "rf_params": {
+    "n_estimators_target": 240,
+    "trees_per_day": 12,
+    "max_depth": 20,
+    "min_samples_leaf": 20,
+    "n_jobs": 1
+  },
+  "sampling": {
+    "train_file_fraction": 0.8,
+    "base_subsample": 8,
+    "high_pressure_subsample": 16,
+    "critical_pressure_subsample": 32,
+    "max_rows_per_day_train": 12000,
+    "max_rows_per_day_eval": 16000
+  },
+  "files": {
+    "train_files": 20,
+    "eval_files": 5
+  },
+  "fitted_trees": {
+    "h10": 240,
+    "h20": 240,
+    "h50": 240,
+    "h100": 240
+  },
+  "fitted_days": {
+    "h10": 20,
+    "h20": 20,
+    "h50": 20,
+    "h100": 20
+  },
+  "train_rows_seen": {
+    "h10": 240000,
+    "h20": 240000,
+    "h50": 240000,
+    "h100": 240000
+  },
+  "eval_rows_seen": {
+    "h10": 80000,
+    "h20": 80000,
+    "h50": 80000,
+    "h100": 80000
+  },
+  "test_metrics": {
+    "h10_accuracy": 0.913825,
+    "h10_f1_macro": 0.31832412402736227,
+    "h10_f1_weighted": 0.872677627917913,
+    "h10_precision_macro": 0.3046083333333333,
+    "h10_recall_macro": 0.3333333333333333,
+    "h20_accuracy": 0.78875,
+    "h20_f1_macro": 0.34514544777594414,
+    "h20_f1_weighted": 0.7420437745210436,
+    "h20_precision_macro": 0.3994612160409426,
+    "h20_recall_macro": 0.35028877842433687,
+    "h50_accuracy": 0.4978,
+    "h50_f1_macro": 0.3750617770167632,
+    "h50_f1_weighted": 0.5023757997956886,
+    "h50_precision_macro": 0.3909326949008782,
+    "h50_recall_macro": 0.37311154590039514,
+    "h100_accuracy": 0.35365,
+    "h100_f1_macro": 0.3490555586191146,
+    "h100_f1_weighted": 0.3549115734766573,
+    "h100_precision_macro": 0.38801342279697576,
+    "h100_recall_macro": 0.37281136760535594
+  },
+  "model_paths": {
+    "h10": "/content/drive/MyDrive/multi-horizon-ofi/model_weights/rf_wallbridge_classifier_h10.joblib",
+    "h20": "/content/drive/MyDrive/multi-horizon-ofi/model_weights/rf_wallbridge_classifier_h20.joblib",
+    "h50": "/content/drive/MyDrive/multi-horizon-ofi/model_weights/rf_wallbridge_classifier_h50.joblib",
+    "h100": "/content/drive/MyDrive/multi-horizon-ofi/model_weights/rf_wallbridge_classifier_h100.joblib"
+  },
+  "runtime_seconds": 507.42
+}

@@ -1,0 +1,63 @@
+{
+  "timestamp": "2026-03-24T09:15:17.091553",
+  "tickers": [
+    "AAPL",
+    "AMZN",
+    "GOOG",
+    "MSFT",
+    "TSLA"
+  ],
+  "horizons": [
+    10,
+    20,
+    50,
+    100
+  ],
+  "seq_len": 100,
+  "alpha": 0.002,
+  "feature_spec": "raw_lob_10_levels_only",
+  "features_per_event": 40,
+  "flattened_dim": 4000,
+  "n_train": 88854,
+  "n_val": 29618,
+  "n_test": 29619,
+  "max_total_samples": 148091,
+  "ram_fraction_for_dataset": 0.2,
+  "rf_params": {
+    "n_estimators": 300,
+    "max_depth": 20,
+    "min_samples_leaf": 20,
+    "class_weight": "balanced",
+    "n_jobs": -1,
+    "random_state": 42
+  },
+  "test_metrics": {
+    "h10_accuracy": 1.0,
+    "h10_f1_macro": 1.0,
+    "h10_f1_weighted": 1.0,
+    "h10_precision_macro": 1.0,
+    "h10_recall_macro": 1.0,
+    "h20_accuracy": 1.0,
+    "h20_f1_macro": 1.0,
+    "h20_f1_weighted": 1.0,
+    "h20_precision_macro": 1.0,
+    "h20_recall_macro": 1.0,
+    "h50_accuracy": 1.0,
+    "h50_f1_macro": 1.0,
+    "h50_f1_weighted": 1.0,
+    "h50_precision_macro": 1.0,
+    "h50_recall_macro": 1.0,
+    "h100_accuracy": 1.0,
+    "h100_f1_macro": 1.0,
+    "h100_f1_weighted": 1.0,
+    "h100_precision_macro": 1.0,
+    "h100_recall_macro": 1.0
+  },
+  "model_paths": {
+    "h10": "/content/drive/MyDrive/multi-horizon-ofi/model_weights/rf_wallbridge_classifier_h10.joblib",
+    "h20": "/content/drive/MyDrive/multi-horizon-ofi/model_weights/rf_wallbridge_classifier_h20.joblib",
+    "h50": "/content/drive/MyDrive/multi-horizon-ofi/model_weights/rf_wallbridge_classifier_h50.joblib",
+    "h100": "/content/drive/MyDrive/multi-horizon-ofi/model_weights/rf_wallbridge_classifier_h100.joblib"
+  },
+  "runtime_seconds": 32.39
+}
