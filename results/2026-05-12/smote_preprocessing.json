@@ -1,0 +1,9 @@
+{
+  "original_shape": "(5000, 10, 10)",
+  "smote_output_shape": "(5706, 10, 10)",
+  "class_distribution": {
+    "0": 1902,
+    "1": 1902,
+    "2": 1902
+  }
+}

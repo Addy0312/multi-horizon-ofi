@@ -1,0 +1,18 @@
+{
+  "architecture": "lstm_regressor_minmax",
+  "best_loss": 0.9934058807790279,
+  "history": [
+    {
+      "avg_loss": 1.006290465593338,
+      "r2_score": NaN
+    },
+    {
+      "avg_loss": 0.9934058807790279,
+      "r2_score": -0.0006427764892578125
+    },
+    {
+      "avg_loss": 1.005469909310341,
+      "r2_score": -0.0005044937133789062
+    }
+  ]
+}

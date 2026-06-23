@@ -1,0 +1,155 @@
+{
+  "timestamp": "2026-05-05T19:22:17.506011",
+  "mode": "day_by_day_streaming_deep_stable_earlystop",
+  "architecture": "seq2seq_attn",
+  "tickers": [
+    "AAPL",
+    "AMZN",
+    "GOOG",
+    "MSFT",
+    "TSLA"
+  ],
+  "horizons": [
+    10,
+    20,
+    50,
+    100
+  ],
+  "seq_len": 100,
+  "alpha": 5e-05,
+  "train_config": {
+    "max_epochs": 6,
+    "patience": 2,
+    "min_delta": 0.0001,
+    "batch_size": 32,
+    "lr": 0.0002,
+    "weight_decay": 0.0001,
+    "grad_clip": 1.0,
+    "amp": true,
+    "label_smoothing": 0.02,
+    "device": "cuda"
+  },
+  "sampling": {
+    "train_file_fraction": 0.8,
+    "base_subsample": 16,
+    "high_pressure_subsample": 16,
+    "critical_pressure_subsample": 32,
+    "max_rows_per_day_train": 8000,
+    "max_rows_per_day_eval": 10000,
+    "max_files_per_ticker": 0
+  },
+  "files": {
+    "train_files": 76,
+    "eval_files": 20,
+    "days_fitted": 228
+  },
+  "early_stopping": {
+    "best_epoch": 1,
+    "best_mean_macro_f1": 0.3093918824876206,
+    "epochs_ran": 3
+  },
+  "epoch_history": [
+    {
+      "epoch": 1,
+      "mean_macro_f1": 0.3093918824876206,
+      "avg_train_loss": 0.9348202907989165,
+      "bad_batches": 0,
+      "improved": true
+    },
+    {
+      "epoch": 2,
+      "mean_macro_f1": 0.3029937129306013,
+      "avg_train_loss": 0.844278299837143,
+      "bad_batches": 0,
+      "improved": false
+    },
+    {
+      "epoch": 4,
+      "mean_macro_f1": 0.29199336297448275,
+      "avg_train_loss": 0.29486714813779846,
+      "bad_batches": 0,
+      "improved": false
+    }
+  ],
+  "train_rows_seen": {
+    "h10": 3906956,
+    "h20": 3906956,
+    "h50": 3906956,
+    "h100": 3906956
+  },
+  "eval_rows_seen": {
+    "h10": 200000,
+    "h20": 200000,
+    "h50": 200000,
+    "h100": 200000
+  },
+  "train_class_counts": {
+    "h10": [
+      1128676,
+      1649478,
+      1128802
+    ],
+    "h20": [
+      1097965,
+      1707243,
+      1101748
+    ],
+    "h50": [
+      1164871,
+      1580871,
+      1161214
+    ],
+    "h100": [
+      1272278,
+      1357124,
+      1277554
+    ]
+  },
+  "eval_class_counts": {
+    "h10": [
+      14331,
+      171272,
+      14397
+    ],
+    "h20": [
+      25653,
+      148582,
+      25765
+    ],
+    "h50": [
+      46895,
+      105986,
+      47119
+    ],
+    "h100": [
+      61887,
+      76414,
+      61699
+    ]
+  },
+  "bad_batches_total": 0,
+  "test_metrics": {
+    "h10_accuracy": 0.779805,
+    "h10_f1_macro": 0.3346854346783558,
+    "h10_f1_weighted": 0.7620556979959034,
+    "h10_precision_macro": 0.35436168964764986,
+    "h10_recall_macro": 0.3435297110070714,
+    "h20_accuracy": 0.53498,
+    "h20_f1_macro": 0.3333029917180987,
+    "h20_f1_weighted": 0.5584053485742473,
+    "h20_precision_macro": 0.336414950101878,
+    "h20_recall_macro": 0.34269950910451774,
+    "h50_accuracy": 0.30312,
+    "h50_f1_macro": 0.29776904643249996,
+    "h50_f1_weighted": 0.3109156399045619,
+    "h50_precision_macro": 0.31337404435841737,
+    "h50_recall_macro": 0.318862888684004,
+    "h100_accuracy": 0.3143,
+    "h100_f1_macro": 0.27181005712152806,
+    "h100_f1_weighted": 0.2569346623390268,
+    "h100_precision_macro": 0.34344726824910543,
+    "h100_recall_macro": 0.33624321132074647
+  },
+  "model_path": "/content/drive/MyDrive/multi-horizon-ofi/model_weights/seq2seq_attn_focal_adv_weights.pt",
+  "runtime_seconds": 727.58
+}

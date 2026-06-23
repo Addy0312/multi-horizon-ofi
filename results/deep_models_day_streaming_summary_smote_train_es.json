@@ -1,0 +1,28 @@
+{
+  "timestamp": "2026-05-02T23:12:13.361740",
+  "mode": "day_by_day_streaming_deep_multi_arch_stable_earlystop",
+  "architectures": [
+    "dilated_transformer",
+    "hybrid_cnn_inception_lstm",
+    "seq2seq_attn"
+  ],
+  "horizons": [
+    10,
+    20,
+    50,
+    100
+  ],
+  "seq_len": 100,
+  "alpha": 5e-05,
+  "early_stopping": {
+    "max_epochs": 6,
+    "patience": 2,
+    "min_delta": 0.0001
+  },
+  "results_paths": {
+    "dilated_transformer": "/content/drive/MyDrive/multi-horizon-ofi/results/dilated_transformer_results_day_streaming_smote_train_es.json",
+    "hybrid_cnn_inception_lstm": "/content/drive/MyDrive/multi-horizon-ofi/results/hybrid_cnn_inception_lstm_results_day_streaming_smote_train_es.json",
+    "seq2seq_attn": "/content/drive/MyDrive/multi-horizon-ofi/results/seq2seq_attn_results_day_streaming_smote_train_es.json"
+  },
+  "runtime_seconds": 18186.58
+}

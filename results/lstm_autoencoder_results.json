@@ -1,0 +1,17 @@
+{
+  "architecture": "lstm_autoencoder",
+  "epoch_history": [
+    {
+      "epoch": 1,
+      "avg_train_loss": 0.13290592717533917
+    },
+    {
+      "epoch": 2,
+      "avg_train_loss": 0.10984043670232563
+    }
+  ],
+  "best_train_loss": 0.10984043670232563,
+  "total_train_days": 152,
+  "checkpoint_used": "/content/drive/MyDrive/multi-horizon-ofi/model_weights/lstm_autoencoder_checkpoint.pt",
+  "weights_path": "/content/drive/MyDrive/multi-horizon-ofi/model_weights/lstm_autoencoder_weights.pt"
+}
