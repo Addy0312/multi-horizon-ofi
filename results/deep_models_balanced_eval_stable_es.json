@@ -1,0 +1,229 @@
+{
+  "timestamp": "2026-04-28T01:14:27.110169",
+  "mode": "balanced_eval_undersample_no_retrain",
+  "method": {
+    "name": "random_undersampling_stratified",
+    "references": [
+      "He and Garcia 2009 (IEEE TKDE)",
+      "Buda et al. 2018 (arXiv:1710.05381)"
+    ]
+  },
+  "horizons": [
+    10,
+    20,
+    50,
+    100
+  ],
+  "runs": {
+    "dilated_transformer": {
+      "model_path": "/content/drive/MyDrive/multi-horizon-ofi/model_weights/dilated_transformer_stable_es_weights.pt",
+      "balanced_metrics": {
+        "h10_accuracy": 0.35452282929779266,
+        "h10_f1_macro": 0.34991355221060966,
+        "h10_f1_weighted": 0.3499135522106097,
+        "h10_precision_macro": 0.38380526023634437,
+        "h10_recall_macro": 0.35452282929779266,
+        "h20_accuracy": 0.3526293221065762,
+        "h20_f1_macro": 0.35314723249250485,
+        "h20_f1_weighted": 0.35314723249250474,
+        "h20_precision_macro": 0.37080892357359757,
+        "h20_recall_macro": 0.3526293221065762,
+        "h50_accuracy": 0.33781142268187797,
+        "h50_f1_macro": 0.33151301999292865,
+        "h50_f1_weighted": 0.33151301999292865,
+        "h50_precision_macro": 0.32823958460067454,
+        "h50_recall_macro": 0.33781142268187797,
+        "h100_accuracy": 0.3581959729223056,
+        "h100_f1_macro": 0.3254490339777481,
+        "h100_f1_weighted": 0.3254490339777481,
+        "h100_precision_macro": 0.3350218562490907,
+        "h100_recall_macro": 0.3581959729223056
+      },
+      "balanced_counts": {
+        "h10": [
+          14331,
+          14331,
+          14331
+        ],
+        "h20": [
+          25653,
+          25653,
+          25653
+        ],
+        "h50": [
+          46895,
+          46895,
+          46895
+        ],
+        "h100": [
+          61699,
+          61699,
+          61699
+        ]
+      },
+      "target_counts": {
+        "h10": [
+          14331,
+          14331,
+          14331
+        ],
+        "h20": [
+          25653,
+          25653,
+          25653
+        ],
+        "h50": [
+          46895,
+          46895,
+          46895
+        ],
+        "h100": [
+          61699,
+          61699,
+          61699
+        ]
+      },
+      "eval_files": 20
+    },
+    "hybrid_cnn_inception_lstm": {
+      "model_path": "/content/drive/MyDrive/multi-horizon-ofi/model_weights/hybrid_cnn_inception_lstm_stable_es_weights.pt",
+      "balanced_metrics": {
+        "h10_accuracy": 0.4232782080803852,
+        "h10_f1_macro": 0.3689718943300042,
+        "h10_f1_weighted": 0.3689718943300042,
+        "h10_precision_macro": 0.4851283058002947,
+        "h10_recall_macro": 0.4232782080803852,
+        "h20_accuracy": 0.3590093426369885,
+        "h20_f1_macro": 0.3403257695472275,
+        "h20_f1_weighted": 0.34032576954722754,
+        "h20_precision_macro": 0.37963031794106544,
+        "h20_recall_macro": 0.3590093426369885,
+        "h50_accuracy": 0.3346412197462416,
+        "h50_f1_macro": 0.3348029649298125,
+        "h50_f1_weighted": 0.33480296492981243,
+        "h50_precision_macro": 0.3421378738704275,
+        "h50_recall_macro": 0.3346412197462416,
+        "h100_accuracy": 0.357596287352037,
+        "h100_f1_macro": 0.3558667419005152,
+        "h100_f1_weighted": 0.3558667419005152,
+        "h100_precision_macro": 0.35569232731938366,
+        "h100_recall_macro": 0.3575962873520371
+      },
+      "balanced_counts": {
+        "h10": [
+          14331,
+          14331,
+          14331
+        ],
+        "h20": [
+          25653,
+          25653,
+          25653
+        ],
+        "h50": [
+          46895,
+          46895,
+          46895
+        ],
+        "h100": [
+          61699,
+          61699,
+          61699
+        ]
+      },
+      "target_counts": {
+        "h10": [
+          14331,
+          14331,
+          14331
+        ],
+        "h20": [
+          25653,
+          25653,
+          25653
+        ],
+        "h50": [
+          46895,
+          46895,
+          46895
+        ],
+        "h100": [
+          61699,
+          61699,
+          61699
+        ]
+      },
+      "eval_files": 20
+    },
+    "seq2seq_attn": {
+      "model_path": "/content/drive/MyDrive/multi-horizon-ofi/model_weights/seq2seq_attn_stable_es_weights.pt",
+      "balanced_metrics": {
+        "h10_accuracy": 0.3376363594073454,
+        "h10_f1_macro": 0.17610800827509623,
+        "h10_f1_weighted": 0.17610800827509626,
+        "h10_precision_macro": 0.2847772282756803,
+        "h10_recall_macro": 0.33763635940734543,
+        "h20_accuracy": 0.3183123481334217,
+        "h20_f1_macro": 0.198025535397264,
+        "h20_f1_weighted": 0.19802553539726403,
+        "h20_precision_macro": 0.261771344986966,
+        "h20_recall_macro": 0.31831234813342174,
+        "h50_accuracy": 0.3257561218324626,
+        "h50_f1_macro": 0.25515544105419063,
+        "h50_f1_weighted": 0.25515544105419063,
+        "h50_precision_macro": 0.3357542781804037,
+        "h50_recall_macro": 0.32575612183246255,
+        "h100_accuracy": 0.33767700178825155,
+        "h100_f1_macro": 0.2375663219782073,
+        "h100_f1_weighted": 0.23756632197820726,
+        "h100_precision_macro": 0.35115801215692327,
+        "h100_recall_macro": 0.33767700178825155
+      },
+      "balanced_counts": {
+        "h10": [
+          14331,
+          14331,
+          14331
+        ],
+        "h20": [
+          25653,
+          25653,
+          25653
+        ],
+        "h50": [
+          46895,
+          46895,
+          46895
+        ],
+        "h100": [
+          61699,
+          61699,
+          61699
+        ]
+      },
+      "target_counts": {
+        "h10": [
+          14331,
+          14331,
+          14331
+        ],
+        "h20": [
+          25653,
+          25653,
+          25653
+        ],
+        "h50": [
+          46895,
+          46895,
+          46895
+        ],
+        "h100": [
+          61699,
+          61699,
+          61699
+        ]
+      },
+      "eval_files": 20
+    }
+  }
+}

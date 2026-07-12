@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-04-11T10:56:28.620974",
+  "timestamp": "2026-04-16T17:42:10.446825",
   "mode": "day_by_day_streaming_deep",
   "architecture": "hybrid_cnn_inception_lstm",
   "tickers": [
@@ -119,5 +119,5 @@
     "h100_recall_macro": 0.3333333333333333
   },
   "model_path": "/content/drive/MyDrive/multi-horizon-ofi/model_weights/hybrid_cnn_inception_lstm_weights.pt",
-  "runtime_seconds": 90.46
+  "runtime_seconds": 89.56
 }

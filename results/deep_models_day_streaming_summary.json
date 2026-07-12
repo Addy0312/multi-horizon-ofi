@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-04-11T10:58:18.390661",
+  "timestamp": "2026-04-16T17:44:00.152597",
   "mode": "day_by_day_streaming_deep_multi_arch",
   "architectures": [
     "dilated_transformer",
@@ -19,5 +19,5 @@
     "hybrid_cnn_inception_lstm": "/content/drive/MyDrive/multi-horizon-ofi/results/hybrid_cnn_inception_lstm_results_day_streaming.json",
     "seq2seq_attn": "/content/drive/MyDrive/multi-horizon-ofi/results/seq2seq_attn_results_day_streaming.json"
   },
-  "runtime_seconds": 308.95
+  "runtime_seconds": 310.04
 }

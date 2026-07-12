@@ -1,0 +1,192 @@
+{
+  "timestamp": "2026-07-03T05:15:50.909707",
+  "mode": "day_by_day_streaming_deep_stable_earlystop",
+  "architecture": "seq2seq_attn",
+  "horizons": [
+    10,
+    20,
+    50,
+    100
+  ],
+  "seq_len": 100,
+  "alpha": 5e-05,
+  "train_config": {
+    "max_epochs": 10,
+    "patience": 3,
+    "min_delta": 0.0001,
+    "batch_size": 256,
+    "lr": 0.0003,
+    "weight_decay": 0.0001,
+    "grad_clip": 1.0,
+    "amp": true,
+    "label_smoothing": 0.02,
+    "device": "cuda"
+  },
+  "early_stopping": {
+    "best_epoch": 9,
+    "best_mean_macro_f1": 0.2996718967827509,
+    "epochs_ran": 10
+  },
+  "epoch_history": [
+    {
+      "epoch": 1,
+      "mean_macro_f1": 0.2380333108122867,
+      "avg_train_loss": 0.3538699839232531,
+      "bad_batches": 0,
+      "improved": true
+    },
+    {
+      "epoch": 2,
+      "mean_macro_f1": 0.2447919020335661,
+      "avg_train_loss": 0.35295350187424895,
+      "bad_batches": 0,
+      "improved": true
+    },
+    {
+      "epoch": 3,
+      "mean_macro_f1": 0.24479232974985815,
+      "avg_train_loss": 0.3524814435424748,
+      "bad_batches": 0,
+      "improved": false
+    },
+    {
+      "epoch": 4,
+      "mean_macro_f1": 0.2639346193567318,
+      "avg_train_loss": 0.35243361404067597,
+      "bad_batches": 0,
+      "improved": true
+    },
+    {
+      "epoch": 5,
+      "mean_macro_f1": 0.2473881261938304,
+      "avg_train_loss": 0.3519914534151655,
+      "bad_batches": 0,
+      "improved": false
+    },
+    {
+      "epoch": 6,
+      "mean_macro_f1": 0.2718035321597746,
+      "avg_train_loss": 0.3517700642005799,
+      "bad_batches": 0,
+      "improved": true
+    },
+    {
+      "epoch": 7,
+      "mean_macro_f1": 0.2582965435804697,
+      "avg_train_loss": 0.35103847452633863,
+      "bad_batches": 0,
+      "improved": false
+    },
+    {
+      "epoch": 8,
+      "mean_macro_f1": 0.2795142215810322,
+      "avg_train_loss": 0.3505503051299191,
+      "bad_batches": 0,
+      "improved": true
+    },
+    {
+      "epoch": 9,
+      "mean_macro_f1": 0.2996718967827509,
+      "avg_train_loss": 0.34988995945691453,
+      "bad_batches": 0,
+      "improved": true
+    },
+    {
+      "epoch": 10,
+      "mean_macro_f1": 0.2919032343578209,
+      "avg_train_loss": 0.3493110198900736,
+      "bad_batches": 0,
+      "improved": false
+    }
+  ],
+  "files": {
+    "train_files": 76,
+    "eval_files": 20,
+    "days_fitted": 304
+  },
+  "train_rows_seen": {
+    "h10": 2412544,
+    "h20": 2412544,
+    "h50": 2412544,
+    "h100": 2412544
+  },
+  "eval_rows_seen": {
+    "h10": 200000,
+    "h20": 200000,
+    "h50": 200000,
+    "h100": 200000
+  },
+  "train_class_counts": {
+    "h10": [
+      175791,
+      2059511,
+      177242
+    ],
+    "h20": [
+      328327,
+      1755934,
+      328283
+    ],
+    "h50": [
+      604875,
+      1206999,
+      600670
+    ],
+    "h100": [
+      779023,
+      859107,
+      774414
+    ]
+  },
+  "eval_class_counts": {
+    "h10": [
+      21332,
+      156687,
+      21981
+    ],
+    "h20": [
+      35428,
+      128188,
+      36384
+    ],
+    "h50": [
+      56621,
+      84782,
+      58597
+    ],
+    "h100": [
+      69028,
+      59271,
+      71701
+    ]
+  },
+  "bad_batches_total": 0,
+  "test_metrics": {
+    "h10_accuracy": 0.78318,
+    "h10_f1_c0": 0.0003743215422047539,
+    "h10_f1_c1": 0.8784345397338179,
+    "h10_f1_c2": 0.0007262823422605537,
+    "h10_f1_macro": 0.2931783812060944,
+    "h10_f1_weighted": 0.6883161108328814,
+    "h20_accuracy": 0.59802,
+    "h20_f1_c0": 0.1596730538278155,
+    "h20_f1_c1": 0.7518299276574626,
+    "h20_f1_c2": 0.03898508657792013,
+    "h20_f1_macro": 0.31682935602106604,
+    "h20_f1_weighted": 0.5172545255380885,
+    "h50_accuracy": 0.31089,
+    "h50_f1_c0": 0.3864501743753931,
+    "h50_f1_c1": 0.12121960505870609,
+    "h50_f1_c2": 0.35166639303890984,
+    "h50_f1_macro": 0.28644539082433634,
+    "h50_f1_weighted": 0.2638251575614868,
+    "h100_accuracy": 0.368805,
+    "h100_f1_c0": 0.4667484135087471,
+    "h100_f1_c1": 0.08240081383519837,
+    "h100_f1_c2": 0.35755414989457546,
+    "h100_f1_macro": 0.30223445907950697,
+    "h100_f1_weighted": 0.31369839113049397
+  },
+  "model_path": "/content/drive/MyDrive/multi-horizon-ofi/model_weights/seq2seq_attn_stable_es_weights.pt",
+  "runtime_seconds": 1986.72
+}

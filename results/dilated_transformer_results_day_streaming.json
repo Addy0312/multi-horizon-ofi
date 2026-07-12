@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-04-11T10:54:57.656205",
+  "timestamp": "2026-04-16T17:40:39.707132",
   "mode": "day_by_day_streaming_deep",
   "architecture": "dilated_transformer",
   "tickers": [
@@ -119,5 +119,5 @@
     "h100_recall_macro": 0.3333333333333333
   },
   "model_path": "/content/drive/MyDrive/multi-horizon-ofi/model_weights/dilated_transformer_weights.pt",
-  "runtime_seconds": 103.1
+  "runtime_seconds": 102.59
 }
