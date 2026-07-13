@@ -1,168 +1,67 @@
-"""
-Seq2Seq LSTM with Attention for multi-horizon LOB prediction.
-
-Reference: Zhang & Zohren (2021)
-    "Multi-Horizon Forecasting for Limit Order Books:
-     Novel Deep Learning Approaches and Hardware Acceleration"
-
-Architecture:
-    Encoder:
-        Input (batch, seq_len, n_features)
-        → LSTM → encoder_outputs (batch, seq_len, hidden)
-
-    Decoder (autoregressive over horizons):
-        For each horizon step k:
-            → Attention over encoder outputs
-            → LSTM decoder step
-            → Linear → class logits
-
-    This produces one prediction per horizon in a sequence-to-sequence
-    manner, where the decoder "unfolds" across prediction horizons
-    rather than across time steps.
-"""
-
 import torch
 import torch.nn as nn
-from typing import List
-
-from src.models.layers.attention import BahdanauAttention
-
-
-class Seq2SeqAttention(nn.Module):
-    """
-    Seq2Seq LSTM with Bahdanau Attention for multi-horizon
-    LOB price movement prediction.
-
-    The encoder reads the lookback window.
-    The decoder produces one output per horizon, using attention
-    to dynamically focus on different parts of the input sequence.
-    """
-
-    def __init__(
-        self,
-        n_features: int,
-        n_horizons: int = 4,
-        n_classes: int = 3,
-        encoder_hidden: int = 64,
-        decoder_hidden: int = 64,
-        encoder_layers: int = 2,
-        decoder_layers: int = 1,
-        attn_dim: int = 64,
-        dropout: float = 0.3,
-    ):
-        super().__init__()
-
-        self.n_features = n_features
-        self.n_horizons = n_horizons
-        self.n_classes = n_classes
-        self.encoder_hidden = encoder_hidden
-        self.decoder_hidden = decoder_hidden
-
-        # --- Encoder ---
-        self.encoder = nn.LSTM(
-            input_size=n_features,
-            hidden_size=encoder_hidden,
-            num_layers=encoder_layers,
-            batch_first=True,
-            dropout=dropout if encoder_layers > 1 else 0.0,
-            bidirectional=True,
-        )
-
-        # Bidirectional → project to decoder dim
-        self.enc_to_dec_h = nn.Linear(encoder_hidden * 2, decoder_hidden)
-        self.enc_to_dec_c = nn.Linear(encoder_hidden * 2, decoder_hidden)
-
-        # --- Attention ---
-        self.attention = BahdanauAttention(
-            encoder_dim=encoder_hidden * 2,
-            decoder_dim=decoder_hidden,
-            attn_dim=attn_dim,
-        )
-
-        # --- Decoder ---
-        # Input: context (enc_hidden*2) + previous prediction embedding
-        self.decoder = nn.LSTM(
-            input_size=encoder_hidden * 2 + n_classes,
-            hidden_size=decoder_hidden,
-            num_layers=decoder_layers,
-            batch_first=True,
-        )
-
-        self.dropout = nn.Dropout(dropout)
-
-        # Output projection
-        self.output_proj = nn.Linear(
-            decoder_hidden + encoder_hidden * 2, n_classes
-        )
-
-        # Initial decoder input (learnable start token embedding)
-        self.start_token = nn.Parameter(torch.zeros(n_classes))
-
-    def forward(
-        self, x: torch.Tensor, teacher_forcing_ratio: float = 0.0
-    ) -> torch.Tensor:
-        """
-        Parameters
-        ----------
-        x : (batch, seq_len, n_features)
-        teacher_forcing_ratio : float
-            Not used in inference; reserved for training with ground truth.
-
-        Returns
-        -------
-        logits : (batch, n_horizons, n_classes)
-        """
-        batch_size = x.size(0)
-
-        # --- Encode ---
-        enc_outputs, (h_n, c_n) = self.encoder(x)
-        # enc_outputs: (batch, seq_len, enc_hidden * 2)
-
-        # Combine bidirectional hidden states for decoder init
-        # h_n: (num_layers * 2, batch, enc_hidden) → (batch, enc_hidden * 2)
-        h_n_fwd = h_n[-2]  # last forward layer
-        h_n_bwd = h_n[-1]  # last backward layer
-        c_n_fwd = c_n[-2]
-        c_n_bwd = c_n[-1]
-
-        dec_h = torch.tanh(
-            self.enc_to_dec_h(torch.cat([h_n_fwd, h_n_bwd], dim=-1))
-        ).unsqueeze(0)  # (1, batch, dec_hidden)
-        dec_c = torch.tanh(
-            self.enc_to_dec_c(torch.cat([c_n_fwd, c_n_bwd], dim=-1))
-        ).unsqueeze(0)  # (1, batch, dec_hidden)
-
-        # --- Decode: one step per horizon ---
-        outputs = []
-        dec_input = self.start_token.unsqueeze(0).expand(batch_size, -1)
-        # dec_input: (batch, n_classes)
-
-        for h_idx in range(self.n_horizons):
-            # Attention
-            context, attn_w = self.attention(
-                enc_outputs, dec_h.squeeze(0)
-            )
-            # context: (batch, enc_hidden * 2)
-
-            # Decoder input: [context; previous prediction]
-            dec_in = torch.cat([context, dec_input], dim=-1)
-            dec_in = dec_in.unsqueeze(1)  # (batch, 1, dim)
-
-            dec_out, (dec_h, dec_c) = self.decoder(dec_in, (dec_h, dec_c))
-            dec_out = dec_out.squeeze(1)  # (batch, dec_hidden)
-
-            # Output: concat decoder output + context
-            combined = torch.cat([dec_out, context], dim=-1)
-            combined = self.dropout(combined)
-            logits = self.output_proj(combined)  # (batch, n_classes)
-            outputs.append(logits)
-
-            # Next decoder input is the current prediction (greedy)
-            dec_input = F.softmax(logits, dim=-1)
-
-        # Stack: (batch, n_horizons, n_classes)
-        return torch.stack(outputs, dim=1)
-
-
-# Need F for softmax in forward
 import torch.nn.functional as F
+import math
+
+class Seq2SeqAttentionModel(nn.Module):
+
+    def __init__(self, input_dim: int, horizon_count: int, num_classes: int=3, enc_hidden: int=64, dec_hidden: int=64, enc_layers: int=2, attn_dim: int=64, dropout: float=0.3):
+        super().__init__()
+        self.horizon_count = horizon_count
+        self.num_classes = num_classes
+        self.encoder = nn.LSTM(input_dim, enc_hidden, num_layers=enc_layers, batch_first=True, dropout=dropout if enc_layers > 1 else 0.0, bidirectional=True)
+        enc_out_dim = enc_hidden * 2
+        self.attn_w = nn.Linear(enc_out_dim, attn_dim, bias=False)
+        self.attn_v = nn.Linear(attn_dim, 1, bias=False)
+        self.decoder = nn.LSTM(enc_out_dim, dec_hidden, num_layers=1, batch_first=True)
+        self.drop = nn.Dropout(dropout)
+        self.head = nn.Linear(dec_hidden, horizon_count * num_classes)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        bsz = x.size(0)
+        enc_out, _ = self.encoder(x)
+        scores = self.attn_v(torch.tanh(self.attn_w(enc_out))).squeeze(-1)
+        weights = torch.softmax(scores, dim=1).unsqueeze(-1)
+        context = (enc_out * weights).sum(dim=1, keepdim=True)
+        _, (h, _) = self.decoder(context)
+        z = self.drop(h[-1])
+        return self.head(z).view(bsz, self.horizon_count, self.num_classes)
+
+class Seq2SeqDeepLOBAttention(nn.Module):
+
+    def __init__(self, input_dim: int, horizon_count: int, num_classes: int=3, hidden_dim: int=96, embed_dim: int=16):
+        super().__init__()
+        self.horizon_count = horizon_count
+        self.num_classes = num_classes
+        self.encoder_cnn = DeepLOBEncoder(conv_channels=64)
+        self.encoder_lstm = nn.LSTM(input_size=64, hidden_size=hidden_dim, num_layers=1, batch_first=True, bidirectional=False)
+        self.class_embed = nn.Embedding(num_classes, embed_dim)
+        self.decoder_cell = nn.LSTMCell(hidden_dim + embed_dim, hidden_dim)
+        self.query_proj = nn.Linear(hidden_dim, hidden_dim, bias=False)
+        self.classifier = nn.Linear(hidden_dim * 2, num_classes)
+
+    def _attend(self, enc_out: torch.Tensor, h_t: torch.Tensor) -> torch.Tensor:
+        q = self.query_proj(h_t).unsqueeze(2)
+        score = torch.bmm(enc_out, q).squeeze(2)
+        alpha = torch.softmax(score, dim=1)
+        ctx = torch.bmm(alpha.unsqueeze(1), enc_out).squeeze(1)
+        return ctx
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        bsz = x.size(0)
+        enc_in = self.encoder_cnn(x)
+        enc_out, (h_n, c_n) = self.encoder_lstm(enc_in)
+        h_t = h_n[-1]
+        c_t = c_n[-1]
+        prev_cls = torch.ones(bsz, dtype=torch.long, device=x.device)
+        logits_steps = []
+        for _ in range(self.horizon_count):
+            cls_vec = self.class_embed(prev_cls)
+            ctx = self._attend(enc_out, h_t)
+            dec_in = torch.cat([ctx, cls_vec], dim=1)
+            h_t, c_t = self.decoder_cell(dec_in, (h_t, c_t))
+            step_logits = self.classifier(torch.cat([h_t, ctx], dim=1))
+            logits_steps.append(step_logits)
+            prev_cls = step_logits.argmax(dim=1)
+        return torch.stack(logits_steps, dim=1)
+

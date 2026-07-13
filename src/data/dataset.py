@@ -1,313 +1,97 @@
-"""
-PyTorch Dataset for LOB / OFI data with sliding-window sequences.
-
-Handles:
-    - Loading preprocessed parquet → feature engineering → labels
-    - Sliding window creation for sequential models
-    - Train / val / test temporal split (no future leakage)
-    - Both classification and regression targets
-"""
-
-import os
-import glob
-from typing import List, Tuple, Dict, Optional
-
-import numpy as np
-import pandas as pd
 import torch
+import numpy as np
 from torch.utils.data import Dataset, DataLoader
+from .preprocessor import _apply_day_normalization
+from .smote_preprocessing import _apply_smote_to_day
 
-from src.features.ofi import compute_multi_level_ofi
-from src.features.microstructure import compute_all_features, compute_mid_price
-from src.features.labels import (
-    make_regression_labels,
-    make_classification_labels,
-    DEFAULT_HORIZONS,
-)
+@dataclass
+class DayStats:
+    ticker: str
+    file_name: str
+    rows_kept: int
+    step: int
+    max_rows: int
 
-
-# ──────────────────────────────────────────────────────────────────────────
-# Feature builder: parquet → numpy arrays
-# ──────────────────────────────────────────────────────────────────────────
-
-def build_features_and_labels(
-    parquet_path: str,
-    ofi_levels: int = 5,
-    horizons: List[int] | None = None,
-    alpha: float = 0.5,
-    include_raw_lob: bool = True,
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray, List[str]]:
+class StableDayWindowDataset(Dataset):
     """
-    Load one day's parquet and return feature matrix + label arrays.
+    Per-day normalized sliding-window dataset.
 
-    Parameters
-    ----------
-    parquet_path : str
-        Path to preprocessed parquet file.
-    ofi_levels : int
-        Number of LOB levels for OFI computation.
-    horizons : list of int
-        Prediction horizons (events ahead).
-    alpha : float
-        Classification threshold multiplier.
-    include_raw_lob : bool
-        Whether to include raw LOB prices/sizes as features.
-
-    Returns
-    -------
-    X : np.ndarray, shape (N, F)
-        Feature matrix.
-    y_reg : np.ndarray, shape (N, H)
-        Regression targets (delta mid-price) for each horizon.
-    y_cls : np.ndarray, shape (N, H)
-        Classification targets (0/1/2) for each horizon.
-    feature_names : list of str
-        Column names for X.
-    """
-    if horizons is None:
-        horizons = DEFAULT_HORIZONS
-
-    df = pd.read_parquet(parquet_path)
-
-    # --- Features ---
-    ofi_df = compute_multi_level_ofi(df, max_level=ofi_levels)
-    micro_df = compute_all_features(df, max_level=ofi_levels)
-
-    feature_parts = [ofi_df, micro_df]
-
-    if include_raw_lob:
-        lob_cols = []
-        for lvl in range(1, ofi_levels + 1):
-            lob_cols.extend([
-                f"ask_price_{lvl}", f"ask_size_{lvl}",
-                f"bid_price_{lvl}", f"bid_size_{lvl}",
-            ])
-        feature_parts.append(df[lob_cols])
-
-    features = pd.concat(feature_parts, axis=1)
-    feature_names = list(features.columns)
-
-    # --- Labels ---
-    reg_df = make_regression_labels(df, horizons)
-    cls_df = make_classification_labels(df, horizons, alpha=alpha)
-
-    # --- Drop rows with NaN labels (tail of the day) ---
-    max_horizon = max(horizons)
-    valid_end = len(df) - max_horizon
-    if valid_end <= 0:
-        raise ValueError(
-            f"Day has {len(df)} events but max horizon is {max_horizon}"
-        )
-
-    X = features.values[:valid_end].astype(np.float32)
-    y_reg = reg_df.values[:valid_end].astype(np.float32)
-    y_cls = cls_df.values[:valid_end].astype(np.float32)
-
-    return X, y_reg, y_cls, feature_names
-
-
-# ──────────────────────────────────────────────────────────────────────────
-# PyTorch Dataset
-# ──────────────────────────────────────────────────────────────────────────
-
-class LOBDataset(Dataset):
-    """
-    Sliding-window dataset over LOB features.
-
-    Each sample is:
-        X[i] : (seq_len, n_features) — lookback window
-        y_reg[i] : (n_horizons,)     — regression targets at last event
-        y_cls[i] : (n_horizons,)     — classification targets at last event
+    Supports multiple normalization methods via DEEP_CONFIG['normalization_method'].
+    The normalization is fitted and applied per day to prevent cross-day leakage.
     """
 
-    def __init__(
-        self,
-        X: np.ndarray,
-        y_reg: np.ndarray,
-        y_cls: np.ndarray,
-        seq_len: int = 100,
-    ):
-        """
-        Parameters
-        ----------
-        X : np.ndarray, shape (N, F)
-        y_reg : np.ndarray, shape (N, H)
-        y_cls : np.ndarray, shape (N, H)
-        seq_len : int
-            Lookback window size.
-        """
-        self.X = X
-        self.y_reg = y_reg
-        self.y_cls = y_cls
-        self.seq_len = seq_len
+    def __init__(self, raw: np.ndarray, starts: np.ndarray, labels: np.ndarray, seq_len: int, norm_method: str='robust'):
+        raw = np.nan_to_num(raw, nan=0.0, posinf=0.0, neginf=0.0).astype(np.float32, copy=False)
+        raw_normed = _apply_day_normalization(raw, norm_method)
+        self.raw = raw_normed
+        self.starts = starts.astype(np.int64, copy=False)
+        self.labels = labels.astype(np.int64, copy=False)
+        self.seq_len = int(seq_len)
 
     def __len__(self) -> int:
-        return len(self.X) - self.seq_len
+        return int(self.starts.size)
 
-    def __getitem__(self, idx: int) -> Dict[str, torch.Tensor]:
-        x = self.X[idx : idx + self.seq_len]
-        # Labels correspond to the *last* event in the window
-        target_idx = idx + self.seq_len - 1
-        yr = self.y_reg[target_idx]
-        yc = self.y_cls[target_idx]
+    def __getitem__(self, idx: int):
+        s = int(self.starts[idx])
+        x = self.raw[s:s + self.seq_len].copy()
+        x = np.clip(np.nan_to_num(x, nan=0.0, posinf=0.0, neginf=0.0), -10.0, 10.0)
+        y = self.labels[idx]
+        return (torch.from_numpy(x.astype(np.float32, copy=False)), torch.from_numpy(y))
 
-        return {
-            "x": torch.tensor(x, dtype=torch.float32),
-            "y_reg": torch.tensor(yr, dtype=torch.float32),
-            "y_cls": torch.tensor(yc, dtype=torch.long),
-        }
+def _deep_build_day_dataset(parquet_path: str, cfg: dict, is_train: bool) -> Tuple['StableDayWindowDataset | None', 'DayStats | None']:
+    horizons = list(cfg['horizons'])
+    seq_len = int(cfg['seq_len'])
+    alpha = float(cfg['alpha'])
+    step = _deep_choose_subsample(cfg)
+    max_rows = _deep_choose_max_rows(cfg, is_train=is_train)
+    norm_method = str(cfg.get('normalization_method', 'robust'))
+    try:
+        df = pd.read_parquet(parquet_path, columns=DEEP_RAW_LOB_10_COLS)
+    except Exception as e:
+        print(f'  [dataset] Failed to read {parquet_path}: {e}')
+        return (None, None)
+    raw = np.ascontiguousarray(df.to_numpy(dtype=np.float32, copy=False))
+    raw = np.nan_to_num(raw, nan=0.0, posinf=0.0, neginf=0.0)
+    y_full = make_fixed_threshold_classification_labels(df, horizons=horizons, alpha=alpha, use_smoothing=True).to_numpy(dtype=np.float32, copy=False)
+    if cfg.get('enable_stationarity') and '_STATIONARITY_META' in globals() and (_STATIONARITY_META is not None):
+        try:
+            raw = apply_stationarity_transform(raw, _STATIONARITY_META)
+        except Exception as _se:
+            warnings.warn(f'Stationarity transform failed: {_se}')
+    max_h = int(max(horizons))
+    valid_end = len(df) - max_h
+    del df
+    if valid_end <= seq_len:
+        gc.collect()
+        return (None, None)
+    labels = y_full[seq_len - 1:valid_end]
+    valid_mask = ~np.isnan(labels).any(axis=1)
+    starts = np.flatnonzero(valid_mask).astype(np.int64, copy=False)
+    if step > 1:
+        starts = starts[::step]
+    if max_rows > 0:
+        starts = starts[:max_rows]
+    if starts.size == 0:
+        gc.collect()
+        return (None, None)
+    y_day = labels[starts].astype(np.int64, copy=False)
+    class_mask = ((y_day >= 0) & (y_day <= 2)).all(axis=1)
+    starts = starts[class_mask]
+    y_day = y_day[class_mask]
+    if starts.size == 0:
+        gc.collect()
+        return (None, None)
+    if is_train and cfg.get('enable_smote', False):
+        try:
+            raw, starts, y_day = _apply_smote_to_day(raw, starts, y_day, cfg, parquet_path)
+        except Exception as _se:
+            warnings.warn(f'SMOTE failed for {parquet_path}: {_se}')
+    ds = StableDayWindowDataset(raw, starts, y_day, seq_len, norm_method=norm_method)
+    stats = DayStats(ticker=os.path.basename(os.path.dirname(parquet_path)), file_name=os.path.basename(parquet_path), rows_kept=int(starts.size), step=step, max_rows=max_rows)
+    del raw, y_full, labels, valid_mask, y_day, class_mask
+    gc.collect()
+    return (ds, stats)
 
+def _deep_make_loader(dataset: Dataset, cfg: dict, is_train: bool) -> DataLoader:
+    return DataLoader(dataset, batch_size=int(cfg.get('batch_size', 256)), shuffle=is_train, num_workers=int(cfg.get('num_workers', 0)), pin_memory=DEEP_DEVICE.type == 'cuda', drop_last=is_train)
 
-class FlatDataset(Dataset):
-    """
-    Non-sequential dataset for linear / MLP baselines.
-    Each sample is a single row of features (no lookback).
-    """
-
-    def __init__(self, X: np.ndarray, y_reg: np.ndarray, y_cls: np.ndarray):
-        self.X = X
-        self.y_reg = y_reg
-        self.y_cls = y_cls
-
-    def __len__(self) -> int:
-        return len(self.X)
-
-    def __getitem__(self, idx: int) -> Dict[str, torch.Tensor]:
-        return {
-            "x": torch.tensor(self.X[idx], dtype=torch.float32),
-            "y_reg": torch.tensor(self.y_reg[idx], dtype=torch.float32),
-            "y_cls": torch.tensor(self.y_cls[idx], dtype=torch.long),
-        }
-
-
-# ──────────────────────────────────────────────────────────────────────────
-# Temporal train / val / test split
-# ──────────────────────────────────────────────────────────────────────────
-
-def temporal_split(
-    X: np.ndarray,
-    y_reg: np.ndarray,
-    y_cls: np.ndarray,
-    train_frac: float = 0.6,
-    val_frac: float = 0.2,
-) -> Tuple[
-    Tuple[np.ndarray, np.ndarray, np.ndarray],
-    Tuple[np.ndarray, np.ndarray, np.ndarray],
-    Tuple[np.ndarray, np.ndarray, np.ndarray],
-]:
-    """
-    Temporal split: first train_frac → train, next val_frac → val, rest → test.
-    No shuffling — preserves time order to prevent look-ahead bias.
-    """
-    n = len(X)
-    t1 = int(n * train_frac)
-    t2 = int(n * (train_frac + val_frac))
-
-    train = (X[:t1], y_reg[:t1], y_cls[:t1])
-    val = (X[t1:t2], y_reg[t1:t2], y_cls[t1:t2])
-    test = (X[t2:], y_reg[t2:], y_cls[t2:])
-    return train, val, test
-
-
-# ──────────────────────────────────────────────────────────────────────────
-# High-level loader factory
-# ──────────────────────────────────────────────────────────────────────────
-
-def load_all_days(
-    processed_dir: str,
-    ticker: str,
-    ofi_levels: int = 5,
-    horizons: List[int] | None = None,
-    alpha: float = 0.5,
-    include_raw_lob: bool = True,
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray, List[str]]:
-    """
-    Load and concatenate all days for a ticker.
-
-    Returns concatenated (X, y_reg, y_cls, feature_names).
-    """
-    ticker_dir = os.path.join(processed_dir, ticker)
-    parquet_files = sorted(glob.glob(os.path.join(ticker_dir, "*.parquet")))
-
-    if not parquet_files:
-        raise FileNotFoundError(f"No parquet files in {ticker_dir}")
-
-    all_X, all_yr, all_yc = [], [], []
-    feature_names = None
-
-    for pf in parquet_files:
-        X, yr, yc, fnames = build_features_and_labels(
-            pf,
-            ofi_levels=ofi_levels,
-            horizons=horizons,
-            alpha=alpha,
-            include_raw_lob=include_raw_lob,
-        )
-        all_X.append(X)
-        all_yr.append(yr)
-        all_yc.append(yc)
-        if feature_names is None:
-            feature_names = fnames
-
-    return (
-        np.concatenate(all_X, axis=0),
-        np.concatenate(all_yr, axis=0),
-        np.concatenate(all_yc, axis=0),
-        feature_names,
-    )
-
-
-def create_dataloaders(
-    processed_dir: str,
-    ticker: str,
-    seq_len: int = 100,
-    batch_size: int = 256,
-    horizons: List[int] | None = None,
-    train_frac: float = 0.6,
-    val_frac: float = 0.2,
-    flat: bool = False,
-    num_workers: int = 0,
-) -> Tuple[DataLoader, DataLoader, DataLoader, List[str], int]:
-    """
-    End-to-end: load data → features → labels → split → DataLoaders.
-
-    Parameters
-    ----------
-    flat : bool
-        If True, return FlatDataset (for linear / MLP models).
-        If False, return LOBDataset (sliding window for sequential models).
-
-    Returns
-    -------
-    train_loader, val_loader, test_loader, feature_names, n_features
-    """
-    X, y_reg, y_cls, feature_names = load_all_days(
-        processed_dir, ticker, horizons=horizons
-    )
-
-    (X_tr, yr_tr, yc_tr), (X_va, yr_va, yc_va), (X_te, yr_te, yc_te) = \
-        temporal_split(X, y_reg, y_cls, train_frac, val_frac)
-
-    DsCls = FlatDataset if flat else LOBDataset
-
-    if flat:
-        ds_tr = DsCls(X_tr, yr_tr, yc_tr)
-        ds_va = DsCls(X_va, yr_va, yc_va)
-        ds_te = DsCls(X_te, yr_te, yc_te)
-    else:
-        ds_tr = DsCls(X_tr, yr_tr, yc_tr, seq_len=seq_len)
-        ds_va = DsCls(X_va, yr_va, yc_va, seq_len=seq_len)
-        ds_te = DsCls(X_te, yr_te, yc_te, seq_len=seq_len)
-
-    train_loader = DataLoader(
-        ds_tr, batch_size=batch_size, shuffle=False, num_workers=num_workers,
-        drop_last=True,
-    )
-    val_loader = DataLoader(
-        ds_va, batch_size=batch_size, shuffle=False, num_workers=num_workers,
-    )
-    test_loader = DataLoader(
-        ds_te, batch_size=batch_size, shuffle=False, num_workers=num_workers,
-    )
-
-    return train_loader, val_loader, test_loader, feature_names, X.shape[1]

@@ -1,93 +1,32 @@
-"""
-Classification metrics for multi-horizon LOB prediction.
-"""
-
 import numpy as np
 from typing import Dict, List
-from sklearn.metrics import (
-    accuracy_score,
-    f1_score,
-    precision_score,
-    recall_score,
-    confusion_matrix,
-    classification_report,
-)
 
+def _deep_update_confusion(confusion: np.ndarray, y_true: np.ndarray, y_pred: np.ndarray) -> None:
+    mask = (y_true >= 0) & (y_true < 3) & (y_pred >= 0) & (y_pred < 3)
+    yt = y_true[mask].astype(np.int64)
+    yp = y_pred[mask].astype(np.int64)
+    np.add.at(confusion, (yt, yp), 1)
 
-def compute_classification_metrics(
-    y_true: np.ndarray,
-    y_pred: np.ndarray,
-    horizon_name: str = "",
-) -> Dict[str, float]:
-    """
-    Compute classification metrics for a single horizon.
-
-    Parameters
-    ----------
-    y_true : np.ndarray of int, shape (N,)
-    y_pred : np.ndarray of int, shape (N,)
-    horizon_name : str
-        Label prefix for the metrics dict keys.
-
-    Returns
-    -------
-    dict with accuracy, f1_macro, f1_weighted, precision, recall.
-    """
-    prefix = f"{horizon_name}_" if horizon_name else ""
-    return {
-        f"{prefix}accuracy": accuracy_score(y_true, y_pred),
-        f"{prefix}f1_macro": f1_score(y_true, y_pred, average="macro", zero_division=0),
-        f"{prefix}f1_weighted": f1_score(y_true, y_pred, average="weighted", zero_division=0),
-        f"{prefix}precision_macro": precision_score(y_true, y_pred, average="macro", zero_division=0),
-        f"{prefix}recall_macro": recall_score(y_true, y_pred, average="macro", zero_division=0),
-    }
-
-
-def compute_all_horizon_metrics(
-    y_true: np.ndarray,
-    y_pred: np.ndarray,
-    horizons: List[int],
-) -> Dict[str, float]:
-    """
-    Compute classification metrics for all horizons.
-
-    Parameters
-    ----------
-    y_true : np.ndarray, shape (N, H) — ground truth per horizon
-    y_pred : np.ndarray, shape (N, H) — predictions per horizon
-
-    Returns
-    -------
-    Flat dict with prefixed metric names.
-    """
-    metrics = {}
-    for i, h in enumerate(horizons):
-        m = compute_classification_metrics(
-            y_true[:, i], y_pred[:, i], horizon_name=f"h{h}"
-        )
-        metrics.update(m)
+def _deep_metrics_from_confusion(confusion: np.ndarray, h: int) -> dict:
+    metrics: Dict[str, float] = {}
+    n_cls = confusion.shape[0]
+    total = float(confusion.sum())
+    metrics[f'h{h}_accuracy'] = float(np.trace(confusion)) / max(total, 1.0)
+    f1s = []
+    for c in range(n_cls):
+        tp = float(confusion[c, c])
+        fp = float(confusion[:, c].sum()) - tp
+        fn = float(confusion[c, :].sum()) - tp
+        prec = tp / max(tp + fp, 1e-09)
+        rec = tp / max(tp + fn, 1e-09)
+        f1 = 2.0 * prec * rec / max(prec + rec, 1e-09)
+        f1s.append(f1)
+        metrics[f'h{h}_f1_c{c}'] = f1
+    metrics[f'h{h}_f1_macro'] = float(np.mean(f1s))
+    metrics[f'h{h}_f1_weighted'] = float(sum((f1s[c] * float(confusion[c, :].sum()) for c in range(n_cls))) / max(total, 1.0))
     return metrics
 
+def _mean_macro_f1(metrics: dict, horizons: list) -> float:
+    vals = [float(metrics.get(f'h{h}_f1_macro', 0.0)) for h in horizons]
+    return float(np.mean(vals)) if vals else 0.0
 
-def print_classification_report(
-    y_true: np.ndarray,
-    y_pred: np.ndarray,
-    horizon: int,
-    target_names: List[str] | None = None,
-) -> str:
-    """Pretty-print sklearn classification report."""
-    if target_names is None:
-        target_names = ["DOWN", "STATIONARY", "UP"]
-    header = f"\n{'='*50}\nHorizon k={horizon}\n{'='*50}"
-    report = classification_report(
-        y_true, y_pred, target_names=target_names, zero_division=0
-    )
-    return header + "\n" + report
-
-
-def get_confusion_matrix(
-    y_true: np.ndarray,
-    y_pred: np.ndarray,
-) -> np.ndarray:
-    """Return 3×3 confusion matrix."""
-    return confusion_matrix(y_true, y_pred, labels=[0, 1, 2])
