@@ -18,13 +18,15 @@ def main():
     if IN_COLAB:
         from google.colab import drive  # type: ignore
         drive.mount('/content/drive', force_remount=False)
-        root_dir = Path('/content/drive/MyDrive/multi-horizon-ofi')
+        # Store data, weights, and results on Google Drive
+        drive_dir = Path('/content/drive/MyDrive/multi-horizon-ofi')
+        DATA_DIR    = str(drive_dir / 'data' / 'processed')
+        WEIGHTS_DIR = str(drive_dir / 'model_weights')
+        RESULTS_DIR = str(drive_dir / 'results')
     else:
-        root_dir = PROJECT_ROOT
-        
-    DATA_DIR    = str(root_dir / 'data' / 'processed')
-    WEIGHTS_DIR = str(root_dir / 'model_weights')
-    RESULTS_DIR = str(root_dir / 'results')
+        DATA_DIR    = str(PROJECT_ROOT / 'data' / 'processed')
+        WEIGHTS_DIR = str(PROJECT_ROOT / 'model_weights')
+        RESULTS_DIR = str(PROJECT_ROOT / 'results')
     
     Path(WEIGHTS_DIR).mkdir(parents=True, exist_ok=True)
     Path(RESULTS_DIR).mkdir(parents=True, exist_ok=True)
