@@ -47,6 +47,7 @@ def main():
         # Store data, weights, and results on Google Drive
         drive_dir = Path('/content/drive/MyDrive/multi-horizon-ofi')
         DATA_DIR    = str(drive_dir / 'data' / 'processed')
+        WEIGHTS_DIR = str(drive_dir / 'model_weights' / run_id)
         RESULTS_DIR = str(drive_dir / 'results' / run_id)
     else:
         DATA_DIR    = str(PROJECT_ROOT / 'data' / 'processed')
