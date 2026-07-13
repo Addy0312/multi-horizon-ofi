@@ -79,10 +79,16 @@ def _deep_collect_files_by_ticker(
 def _deep_split_train_eval_files(
     files_by_ticker: dict,
     train_frac: float = 0.8,
+    randomize: bool = False,
+    seed: int = 42,
 ) -> Tuple[List[Tuple[str, str]], List[Tuple[str, str]]]:
     train_files: List[Tuple[str, str]] = []
     eval_files:  List[Tuple[str, str]] = []
+    rng = random.Random(seed)
     for ticker, files in files_by_ticker.items():
+        if randomize:
+            files = files.copy()
+            rng.shuffle(files)
         n = len(files)
         n_train = max(1, min(n - 1, int(np.floor(n * train_frac)))) if n > 1 else 1
         for i, p in enumerate(files):

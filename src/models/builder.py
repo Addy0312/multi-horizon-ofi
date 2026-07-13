@@ -4,6 +4,8 @@ from .sequential.cnn_lstm import HybridCNNInceptionLSTM
 from .transformer.dilated import DilatedMaskedTransformer
 from .sequential.seq2seq import Seq2SeqAttentionModel, Seq2SeqDeepLOBAttention
 from .autoencoder.lstm_ae import LSTMAutoencoder
+from .baselines.mlp_baseline import MLPBaseline
+from .baselines.tcn import TCNBaseline
 
 def build_deep_model(arch: str, input_dim: int, horizon_count: int, num_classes: int=3) -> nn.Module:
     if arch == 'dilated_transformer':
@@ -12,5 +14,9 @@ def build_deep_model(arch: str, input_dim: int, horizon_count: int, num_classes:
         return HybridCNNInceptionLSTM(input_dim=input_dim, horizon_count=horizon_count, num_classes=num_classes, channels=96, lstm_hidden=96, dropout=0.2)
     if arch == 'seq2seq_attn':
         return Seq2SeqDeepLOBAttention(input_dim=input_dim, horizon_count=horizon_count, num_classes=num_classes, hidden_dim=96, embed_dim=16)
+    if arch == 'mlp_baseline':
+        return MLPBaseline(input_dim=input_dim, horizon_count=horizon_count, num_classes=num_classes, seq_len=100, hidden_dim=512, dropout=0.3)
+    if arch == 'tcn_baseline':
+        return TCNBaseline(input_dim=input_dim, horizon_count=horizon_count, num_classes=num_classes, num_channels=[64, 64, 64], kernel_size=3, dropout=0.2)
     raise ValueError(f'Unknown architecture: {arch}')
 

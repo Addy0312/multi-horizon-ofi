@@ -11,6 +11,7 @@ from .loss import _deep_class_weights_cb, _deep_focal_loss, _deep_multihorizon_l
 from ..metrics.classification import *
 from ..data.dataset import _deep_build_day_dataset, _deep_make_loader, _deep_resolve_tickers, _deep_collect_files_by_ticker, _deep_split_train_eval_files
 from ..data.helpers import _deep_update_confusion, _deep_metrics_from_confusion, _mean_macro_f1
+from ..metrics.r2 import compute_r2
 from ..utils.system import _avail_ram_gb, _deep_cleanup_cuda
 from ..utils.env import DEEP_DEVICE
 from ..models.builder import build_deep_model
@@ -90,29 +91,43 @@ def _eval_epoch(model: nn.Module, cfg: dict, eval_files: List[Tuple[str, str]], 
     eval_rows = {h: 0 for h in horizons}
     eval_counts = {h: np.zeros(3, dtype=np.int64) for h in horizons}
     model.eval()
+    day_losses = []
     with torch.no_grad():
         for file_idx, (ticker, path) in enumerate(eval_files, start=1):
             ds, stats = _deep_build_day_dataset(path, cfg, is_train=False)
             if ds is None:
                 continue
             loader = _deep_make_loader(ds, cfg, is_train=False)
-            for xb, yb in loader:
-                xb = torch.nan_to_num(xb.to(DEEP_DEVICE, non_blocking=True), nan=0.0, posinf=0.0, neginf=0.0).clamp(-10.0, 10.0)
-                logits = torch.nan_to_num(model(xb), nan=0.0, posinf=0.0, neginf=0.0)
-                preds = logits.argmax(dim=2).detach().cpu().numpy().astype(np.int64)
-                y_true = yb.numpy().astype(np.int64)
+            all_y_true = {h: [] for h in horizons}
+            all_preds = {h: [] for h in horizons}
+            for X, y in loader:
+                X, y = X.to(DEEP_DEVICE), y.to(DEEP_DEVICE)
+                with torch.amp.autocast('cuda', enabled=bool(cfg.get('amp', False))):
+                    out = model(X)
+                preds = torch.argmax(out, dim=-1).cpu().numpy()
+                y_true = y.cpu().numpy()
                 for i, h in enumerate(horizons):
                     _deep_update_confusion(confusion[h], y_true[:, i], preds[:, i])
+                    all_y_true[h].extend(y_true[:, i].tolist())
+                    all_preds[h].extend(preds[:, i].tolist())
                     eval_rows[h] += int(y_true.shape[0])
                     eval_counts[h] += np.bincount(y_true[:, i], minlength=3)
-                del xb, logits, preds, y_true
             print(f'[{arch}][eval {file_idx}/{len(eval_files)}] {ticker}/{stats.file_name}  rows={stats.rows_kept}')
             del loader, ds
             _deep_cleanup_cuda()
-    metrics: Dict[str, float] = {}
+    metrics = {}
+    r2_vals = []
     for h in horizons:
-        metrics.update(_deep_metrics_from_confusion(confusion[h], h))
-    return {'metrics': metrics, 'confusion': confusion, 'eval_rows_seen': eval_rows, 'eval_class_counts': eval_counts}
+        m = _deep_metrics_from_confusion(confusion[h], h)
+        metrics.update(m)
+        try:
+            r2_val = float(compute_r2(all_y_true[h], all_preds[h]))
+        except:
+            r2_val = 0.0
+        metrics[f"h{h}_r2"] = r2_val
+        r2_vals.append(r2_val)
+    metrics['mean_r2'] = float(np.mean(r2_vals)) if r2_vals else 0.0
+    return {'avg_train_loss': float(np.mean(day_losses)) if day_losses else float('inf'), 'metrics': metrics, 'confusion': confusion, 'eval_rows_seen': eval_rows, 'eval_class_counts': eval_counts}
 
 def train_one_architecture(arch: str, cfg: dict, max_epochs: int=10, patience: int=3, min_delta: float=0.0001, force_restart: bool=False) -> dict:
     """
@@ -141,7 +156,12 @@ def train_one_architecture(arch: str, cfg: dict, max_epochs: int=10, patience: i
     files_by_ticker = _deep_collect_files_by_ticker(cfg['data_dir'], tickers_list, int(cfg.get('max_files_per_ticker', 0)))
     if not files_by_ticker:
         raise FileNotFoundError('No parquet files found for selected tickers.')
-    train_files, eval_files = _deep_split_train_eval_files(files_by_ticker, float(cfg.get('train_file_fraction', 0.8)))
+    train_files, eval_files = _deep_split_train_eval_files(
+        files_by_ticker, 
+        float(cfg.get('train_file_fraction', 0.8)),
+        randomize=cfg.get('randomize_split', False),
+        seed=cfg.get('seed', 42)
+    )
     print(f"\n{'═' * 80}")
     print(f'  Training: {arch}')
     print(f'  Device={DEEP_DEVICE}  train_files={len(train_files)}  eval_files={len(eval_files)}')
@@ -344,7 +364,12 @@ def train_lstm_autoencoder_day_by_day(cfg: dict, max_epochs: int=5):
     criterion = nn.MSELoss()
     tickers = _deep_resolve_tickers(cfg)
     files_by_ticker = _deep_collect_files_by_ticker(cfg.get('data_dir', 'data/processed'), tickers, cfg.get('max_files_per_ticker', 0))
-    train_files, eval_files = _deep_split_train_eval_files(files_by_ticker, float(cfg.get('train_file_fraction', 0.8)))
+    train_files, eval_files = _deep_split_train_eval_files(
+        files_by_ticker, 
+        float(cfg.get('train_file_fraction', 0.8)),
+        randomize=cfg.get('randomize_split', False),
+        seed=cfg.get('seed', 42)
+    )
     start_epoch = 1
     start_file_idx = 1
     best_loss = float('inf')

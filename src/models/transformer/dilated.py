@@ -33,7 +33,7 @@ class DilatedMaskedTransformer(nn.Module):
         self.tcn = nn.ModuleList([CausalDilatedConv1d(d_model, d_model, kernel_size=3, dilation=1, dropout=dropout), CausalDilatedConv1d(d_model, d_model, kernel_size=3, dilation=2, dropout=dropout), CausalDilatedConv1d(d_model, d_model, kernel_size=3, dilation=4, dropout=dropout)])
         self.pos_emb = nn.Parameter(torch.randn(1, max_len, d_model) * 0.02)
         enc_layer = nn.TransformerEncoderLayer(d_model=d_model, nhead=n_heads, dim_feedforward=d_model * 4, dropout=dropout, batch_first=True, activation='gelu', norm_first=True)
-        self.encoder = nn.TransformerEncoder(enc_layer, num_layers=n_layers)
+        self.encoder = nn.TransformerEncoder(enc_layer, num_layers=n_layers, enable_nested_tensor=False)
         self.norm = nn.LayerNorm(d_model)
         self.head = nn.Linear(d_model, horizon_count * num_classes)
 
