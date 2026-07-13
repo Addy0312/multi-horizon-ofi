@@ -21,8 +21,8 @@ def main():
     IN_COLAB = is_colab()
     
     if IN_COLAB:
-        from google.colab import drive  # type: ignore
-        drive.mount('/content/drive', force_remount=False)
+        # Note: In Colab, the drive must be mounted in a notebook cell BEFORE running this script!
+        # drive.mount('/content/drive') will crash if run inside a !python subprocess.
         # Store data, weights, and results on Google Drive
         drive_dir = Path('/content/drive/MyDrive/multi-horizon-ofi')
         DATA_DIR    = str(drive_dir / 'data' / 'processed')

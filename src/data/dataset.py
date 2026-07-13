@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import os
 import gc
+import warnings
 from typing import List, Tuple, Dict, Optional
 from torch.utils.data import Dataset, DataLoader
 from dataclasses import dataclass
@@ -11,6 +12,7 @@ from ..etl.preprocess import DEEP_RAW_LOB_10_COLS
 from ..features.labels import make_fixed_threshold_classification_labels
 from .preprocessor import _apply_day_normalization
 from .smote_preprocessing import _apply_smote_to_day
+from .stationarity import apply_stationarity_transform
 from .helpers import (
     _deep_resolve_tickers,
     _deep_collect_files_by_ticker,
@@ -69,9 +71,9 @@ def _deep_build_day_dataset(parquet_path: str, cfg: dict, is_train: bool) -> Tup
     raw = np.ascontiguousarray(df.to_numpy(dtype=np.float32, copy=False))
     raw = np.nan_to_num(raw, nan=0.0, posinf=0.0, neginf=0.0)
     y_full = make_fixed_threshold_classification_labels(df, horizons=horizons, alpha=alpha, use_smoothing=True).to_numpy(dtype=np.float32, copy=False)
-    if cfg.get('enable_stationarity') and '_STATIONARITY_META' in globals() and (_STATIONARITY_META is not None):
+    if cfg.get('enable_stationarity') and globals().get('_STATIONARITY_META') is not None:
         try:
-            raw = apply_stationarity_transform(raw, _STATIONARITY_META)
+            raw = apply_stationarity_transform(raw, globals().get('_STATIONARITY_META'))
         except Exception as _se:
             warnings.warn(f'Stationarity transform failed: {_se}')
     max_h = int(max(horizons))
