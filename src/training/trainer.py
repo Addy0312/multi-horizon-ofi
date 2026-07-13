@@ -166,7 +166,7 @@ def train_one_architecture(arch: str, cfg: dict, max_epochs: int=10, patience: i
     print(f'  Training: {arch}')
     print(f'  Device={DEEP_DEVICE}  train_files={len(train_files)}  eval_files={len(eval_files)}')
     print(f'  max_epochs={max_epochs}  patience={patience}  amp={amp_enabled}')
-    model = build_deep_model(arch=arch, input_dim=len(DEEP_RAW_LOB_10_COLS), horizon_count=len(horizons), num_classes=3).to(DEEP_DEVICE)
+    model = build_deep_model(arch=arch, input_dim=len(DEEP_RAW_LOB_10_COLS), horizon_count=len(horizons), num_classes=3, seq_len=int(cfg.get('seq_len', 100))).to(DEEP_DEVICE)
     optimizer = torch.optim.AdamW(model.parameters(), lr=float(cfg.get('lr', 0.0003)), weight_decay=float(cfg.get('weight_decay', 0.0001)))
     scaler = torch.amp.GradScaler('cuda', enabled=amp_enabled)
     start_epoch = 1
@@ -300,7 +300,7 @@ def _load_model_for_eval(arch: str, cfg: dict, suffix: str) -> 'nn.Module | None
         weights_path = best_path
     try:
         ckpt = torch.load(weights_path, map_location='cpu')
-        model = build_deep_model(arch=arch, input_dim=len(DEEP_RAW_LOB_10_COLS), horizon_count=len(horizons), num_classes=3)
+        model = build_deep_model(arch=arch, input_dim=len(DEEP_RAW_LOB_10_COLS), horizon_count=len(horizons), num_classes=3, seq_len=int(cfg.get('seq_len', 100)))
         sd = ckpt.get('state_dict', ckpt)
         model.load_state_dict(sd)
         model.eval()

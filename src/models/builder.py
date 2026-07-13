@@ -7,7 +7,7 @@ from .autoencoder.lstm_ae import LSTMAutoencoder
 from .baselines.mlp_baseline import MLPBaseline
 from .baselines.tcn import TCNBaseline
 
-def build_deep_model(arch: str, input_dim: int, horizon_count: int, num_classes: int=3) -> nn.Module:
+def build_deep_model(arch: str, input_dim: int, horizon_count: int, num_classes: int=3, seq_len: int=100) -> nn.Module:
     if arch == 'dilated_transformer':
         return DilatedMaskedTransformer(input_dim=input_dim, horizon_count=horizon_count, num_classes=num_classes, d_model=96, n_heads=4, n_layers=2, dropout=0.15)
     if arch == 'hybrid_cnn_inception_lstm':
@@ -15,7 +15,7 @@ def build_deep_model(arch: str, input_dim: int, horizon_count: int, num_classes:
     if arch == 'seq2seq_attn':
         return Seq2SeqDeepLOBAttention(input_dim=input_dim, horizon_count=horizon_count, num_classes=num_classes, hidden_dim=96, embed_dim=16)
     if arch == 'mlp_baseline':
-        return MLPBaseline(input_dim=input_dim, horizon_count=horizon_count, num_classes=num_classes, seq_len=100, hidden_dim=512, dropout=0.3)
+        return MLPBaseline(input_dim=input_dim, horizon_count=horizon_count, num_classes=num_classes, seq_len=seq_len, hidden_dim=512, dropout=0.3)
     if arch == 'tcn_baseline':
         return TCNBaseline(input_dim=input_dim, horizon_count=horizon_count, num_classes=num_classes, num_channels=[64, 64, 64], kernel_size=3, dropout=0.2)
     raise ValueError(f'Unknown architecture: {arch}')
