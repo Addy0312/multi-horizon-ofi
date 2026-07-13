@@ -3,15 +3,33 @@ import shutil
 from pathlib import Path
 from datetime import datetime
 
+def is_colab():
+    try:
+        import google.colab
+        return True
+    except ImportError:
+        return False
+
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
+if is_colab():
+    base_dir = Path('/content/drive/MyDrive/multi-horizon-ofi')
+    print("Detected Colab environment. Operating on Google Drive paths.")
+else:
+    base_dir = PROJECT_ROOT
+    print("Detected local environment. Operating on local paths.")
+
 for folder_name in ['results', 'model_weights']:
-    folder_path = PROJECT_ROOT / folder_name
+    folder_path = base_dir / folder_name
     if not folder_path.exists():
+        print(f"Skipping {folder_path}, does not exist.")
         continue
 
     # Get all files directly inside the folder (ignore directories)
     files = [f for f in folder_path.iterdir() if f.is_file()]
+    if not files:
+        print(f"No loose files found in {folder_path}.")
+        continue
 
     for file_path in files:
         # Ignore dot files or metadata
@@ -26,7 +44,7 @@ for folder_name in ['results', 'model_weights']:
         date_str = dt.strftime("%Y_%m_%d")
         
         dest_dir = folder_path / f"legacy_run_{date_str}"
-        dest_dir.mkdir(exist_ok=True)
+        dest_dir.mkdir(parents=True, exist_ok=True)
         
         print(f"Moving {file_path.name} to {dest_dir.name}/")
         shutil.move(str(file_path), str(dest_dir / file_path.name))
