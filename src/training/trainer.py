@@ -17,7 +17,7 @@ from ..models.builder import build_deep_model
 from ..models.autoencoder.lstm_ae import LSTMAutoencoder
 from ..etl.preprocess import DEEP_RAW_LOB_10_COLS
 
-def _train_epoch(model: nn.Module, optimizer: torch.optim.Optimizer, scaler: 'torch.cuda.amp.GradScaler', cfg: dict, train_files: List[Tuple[str, str]], horizons: List[int], epoch_idx: int, total_epochs: int, amp_enabled: bool, arch: str, start_file_idx: int=1, mid_state: dict=None) -> dict:
+def _train_epoch(model: nn.Module, optimizer: torch.optim.Optimizer, scaler: 'torch.amp.GradScaler', cfg: dict, train_files: List[Tuple[str, str]], horizons: List[int], epoch_idx: int, total_epochs: int, amp_enabled: bool, arch: str, start_file_idx: int=1, mid_state: dict=None) -> dict:
     model.train()
     grad_clip = float(cfg.get('grad_clip', 1.0))
     label_smoothing = float(cfg.get('label_smoothing', 0.0))
@@ -50,7 +50,7 @@ def _train_epoch(model: nn.Module, optimizer: torch.optim.Optimizer, scaler: 'to
             xb = torch.nan_to_num(xb, nan=0.0, posinf=0.0, neginf=0.0).clamp(-10.0, 10.0)
             yb = yb.to(DEEP_DEVICE, non_blocking=True)
             optimizer.zero_grad(set_to_none=True)
-            with torch.cuda.amp.autocast(enabled=amp_enabled):
+            with torch.amp.autocast('cuda', enabled=amp_enabled):
                 logits = model(xb)
                 logits = torch.nan_to_num(logits, nan=0.0, posinf=0.0, neginf=0.0)
                 loss = _deep_multihorizon_loss_advanced(
@@ -130,7 +130,7 @@ def train_one_architecture(arch: str, cfg: dict, max_epochs: int=10, patience: i
     if not force_restart and is_arch_completed(cfg, arch, suffix):
         ckpt = load_checkpoint(cfg, arch, suffix)
         print(f"[{arch}] Already COMPLETED (epoch={ckpt['epoch']}  best_f1={ckpt['best_score']:.4f}). Skipping.")
-        results_path = os.path.join(cfg['results_dir'], f'{arch}_results_day_streaming{suffix}.json')
+        results_path = os.path.join(cfg['results_dir'], f'{arch}_run_metadata.json')
         if os.path.exists(results_path):
             with open(results_path) as f:
                 return json.load(f)
@@ -148,7 +148,7 @@ def train_one_architecture(arch: str, cfg: dict, max_epochs: int=10, patience: i
     print(f'  max_epochs={max_epochs}  patience={patience}  amp={amp_enabled}')
     model = build_deep_model(arch=arch, input_dim=len(DEEP_RAW_LOB_10_COLS), horizon_count=len(horizons), num_classes=3).to(DEEP_DEVICE)
     optimizer = torch.optim.AdamW(model.parameters(), lr=float(cfg.get('lr', 0.0003)), weight_decay=float(cfg.get('weight_decay', 0.0001)))
-    scaler = torch.cuda.amp.GradScaler(enabled=amp_enabled)
+    scaler = torch.amp.GradScaler('cuda', enabled=amp_enabled)
     start_epoch = 1
     start_file_idx = 1
     mid_state = None
@@ -250,12 +250,22 @@ def _finalize_arch(arch, cfg, model, best_metrics, best_score, best_epoch, epoch
     os.makedirs(cfg['results_dir'], exist_ok=True)
     weights_path = os.path.join(cfg['weights_dir'], f'{arch}{suffix}_weights.pt')
     torch.save({'architecture': arch, 'state_dict': model.state_dict(), 'input_dim': len(DEEP_RAW_LOB_10_COLS), 'horizons': horizons, 'seq_len': int(cfg['seq_len']), 'alpha': float(cfg['alpha']), 'device_trained': str(DEEP_DEVICE), 'best_epoch': int(best_epoch), 'best_macro_f1': float(best_score)}, weights_path)
-    run_meta = {'timestamp': pd.Timestamp.now().isoformat(), 'mode': 'day_by_day_streaming_deep_stable_earlystop', 'architecture': arch, 'horizons': horizons, 'seq_len': int(cfg['seq_len']), 'alpha': float(cfg['alpha']), 'train_config': {'max_epochs': int(max_epochs), 'patience': int(patience), 'min_delta': float(min_delta), 'batch_size': int(cfg.get('batch_size', 256)), 'lr': float(cfg.get('lr', 0.0003)), 'weight_decay': float(cfg.get('weight_decay', 0.0001)), 'grad_clip': float(cfg.get('grad_clip', 1.0)), 'amp': bool(cfg.get('amp', False)), 'label_smoothing': float(cfg.get('label_smoothing', 0.0)), 'device': str(DEEP_DEVICE)}, 'early_stopping': {'best_epoch': int(best_epoch), 'best_mean_macro_f1': float(best_score), 'epochs_ran': int(len(epoch_history))}, 'epoch_history': epoch_history, 'files': {'train_files': len(train_files), 'eval_files': len(eval_files), 'days_fitted': int(total_train_days)}, 'train_rows_seen': {f'h{h}': int(agg_train_rows[h]) for h in horizons}, 'eval_rows_seen': {f'h{h}': int(best_eval_rows[h]) for h in horizons}, 'train_class_counts': {f'h{h}': [int(x) for x in agg_train_counts[h].tolist()] for h in horizons}, 'eval_class_counts': {f'h{h}': [int(x) for x in best_eval_counts[h].tolist()] for h in horizons}, 'bad_batches_total': int(total_bad_batches), 'test_metrics': best_metrics, 'model_path': weights_path, 'runtime_seconds': round(elapsed, 2)}
-    results_path = os.path.join(cfg['results_dir'], f'{arch}_results_day_streaming{suffix}.json')
-    with open(results_path, 'w') as f:
+    run_meta = {'timestamp': pd.Timestamp.now().isoformat(), 'mode': 'day_by_day_streaming_deep_stable_earlystop', 'architecture': arch, 'horizons': horizons, 'seq_len': int(cfg['seq_len']), 'alpha': float(cfg['alpha']), 'train_config': {'max_epochs': int(max_epochs), 'patience': int(patience), 'min_delta': float(min_delta), 'batch_size': int(cfg.get('batch_size', 256)), 'lr': float(cfg.get('lr', 0.0003)), 'weight_decay': float(cfg.get('weight_decay', 0.0001)), 'grad_clip': float(cfg.get('grad_clip', 1.0)), 'amp': bool(cfg.get('amp', False)), 'label_smoothing': float(cfg.get('label_smoothing', 0.0)), 'device': str(DEEP_DEVICE)}, 'early_stopping': {'best_epoch': int(best_epoch), 'best_mean_macro_f1': float(best_score), 'epochs_ran': int(len(epoch_history))}, 'files': {'train_files': len(train_files), 'eval_files': len(eval_files), 'days_fitted': int(total_train_days)}, 'train_rows_seen': {f'h{h}': int(agg_train_rows[h]) for h in horizons}, 'eval_rows_seen': {f'h{h}': int(best_eval_rows[h]) for h in horizons}, 'train_class_counts': {f'h{h}': [int(x) for x in agg_train_counts[h].tolist()] for h in horizons}, 'eval_class_counts': {f'h{h}': [int(x) for x in best_eval_counts[h].tolist()] for h in horizons}, 'bad_batches_total': int(total_bad_batches), 'model_path': weights_path, 'runtime_seconds': round(elapsed, 2)}
+    
+    # Split output logically
+    metrics_path = os.path.join(cfg['results_dir'], f'{arch}_metrics.json')
+    history_path = os.path.join(cfg['results_dir'], f'{arch}_epoch_history.json')
+    meta_path = os.path.join(cfg['results_dir'], f'{arch}_run_metadata.json')
+    
+    with open(metrics_path, 'w') as f:
+        json.dump(best_metrics, f, indent=2)
+    with open(history_path, 'w') as f:
+        json.dump(epoch_history, f, indent=2)
+    with open(meta_path, 'w') as f:
         json.dump(run_meta, f, indent=2)
+        
     print(f'[{arch}] ✓ Weights  → {weights_path}')
-    print(f'[{arch}] ✓ Results  → {results_path}')
+    print(f'[{arch}] ✓ Metrics  → {metrics_path}')
     del model
     _deep_cleanup_cuda()
     return run_meta
@@ -436,7 +446,7 @@ def run_all_deep_models_day_by_day_stable_earlystop(config: dict, max_epochs: in
         suffix = str(cfg.get('result_suffix', '_stable_es'))
         if suffix and not suffix.startswith('_'):
             suffix = '_' + suffix
-        all_results_paths[arch] = os.path.join(cfg['results_dir'], f'{arch}_results_day_streaming{suffix}.json')
+        all_results_paths[arch] = os.path.join(cfg['results_dir'], f'{arch}_run_metadata.json')
         
         from ..data.helpers import _deep_cleanup_cuda
         _deep_cleanup_cuda()

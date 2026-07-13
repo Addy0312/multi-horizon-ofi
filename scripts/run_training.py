@@ -2,6 +2,8 @@ import os
 import sys
 import torch
 import argparse
+import subprocess
+import datetime
 from pathlib import Path
 
 # Add project root to path
@@ -16,7 +18,26 @@ from src.training.trainer import run_all_deep_models_day_by_day_stable_earlystop
 def main():
     parser = argparse.ArgumentParser(description="Run deep learning training pipeline for Multi-Horizon OFI.")
     parser.add_argument('--test', action='store_true', help="Run in nuked testing mode to verify the pipeline ends-to-end.")
+    parser.add_argument('--run-name', type=str, help="Override the entire run folder name (ignores commit/date).")
+    parser.add_argument('--suffix', type=str, help="Append a suffix to the auto-generated run ID.")
     args = parser.parse_args()
+
+    # Generate logical run ID
+    if args.run_name:
+        run_id = args.run_name
+    else:
+        try:
+            commit_hash = subprocess.check_output(['git', 'log', '-1', '--format=%h']).decode('utf-8').strip()
+            commit_time = subprocess.check_output(['git', 'log', '-1', '--format=%cd', '--date=format:%Y-%m-%d-%H-%M']).decode('utf-8').strip()
+        except Exception:
+            commit_hash = "unknown"
+            commit_time = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M")
+        
+        run_id = f"{commit_time}-{commit_hash}"
+        if args.suffix:
+            run_id = f"{run_id}_{args.suffix}"
+    
+    print(f"Logical Run ID: {run_id}")
 
     IN_COLAB = is_colab()
     
@@ -26,12 +47,11 @@ def main():
         # Store data, weights, and results on Google Drive
         drive_dir = Path('/content/drive/MyDrive/multi-horizon-ofi')
         DATA_DIR    = str(drive_dir / 'data' / 'processed')
-        WEIGHTS_DIR = str(drive_dir / 'model_weights')
-        RESULTS_DIR = str(drive_dir / 'results')
+        RESULTS_DIR = str(drive_dir / 'results' / run_id)
     else:
         DATA_DIR    = str(PROJECT_ROOT / 'data' / 'processed')
-        WEIGHTS_DIR = str(PROJECT_ROOT / 'model_weights')
-        RESULTS_DIR = str(PROJECT_ROOT / 'results')
+        WEIGHTS_DIR = str(PROJECT_ROOT / 'model_weights' / run_id)
+        RESULTS_DIR = str(PROJECT_ROOT / 'results' / run_id)
     
     Path(WEIGHTS_DIR).mkdir(parents=True, exist_ok=True)
     Path(RESULTS_DIR).mkdir(parents=True, exist_ok=True)
@@ -88,9 +108,10 @@ def main():
         DEEP_CONFIG["max_rows_per_day_eval"] = 200
         DEEP_CONFIG["max_files_per_ticker"] = 1
         DEEP_CONFIG["batch_size"] = 32
-        DEEP_CONFIG["result_suffix"] = "_TEST_RUN"
+        DEEP_CONFIG["result_suffix"] = ""  # Let the Run ID handle organization
         max_epochs = 1
     else:
+        DEEP_CONFIG["result_suffix"] = ""  # Let the Run ID handle organization
         max_epochs = 10
 
     print(f"Device: {torch.device('cuda' if torch.cuda.is_available() else 'cpu')}")
