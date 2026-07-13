@@ -4,6 +4,14 @@ import os
 import glob
 import argparse
 from tqdm import tqdm
+from typing import List, Tuple
+
+# Raw 10-level LOB columns (40 features per event)
+DEEP_RAW_LOB_10_COLS = [
+    f"{side}_{field}_{lvl}"
+    for lvl in range(1, 11)
+    for side, field in (("ask", "price"), ("ask", "size"), ("bid", "price"), ("bid", "size"))
+]
 
 def process_day(msg_file, ob_file, output_dir, ticker, date):
     """

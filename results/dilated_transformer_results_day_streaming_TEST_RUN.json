@@ -1,0 +1,129 @@
+{
+  "timestamp": "2026-07-13T16:25:02.372789",
+  "mode": "day_by_day_streaming_deep_stable_earlystop",
+  "architecture": "dilated_transformer",
+  "horizons": [
+    10,
+    20,
+    50,
+    100
+  ],
+  "seq_len": 100,
+  "alpha": 5e-05,
+  "train_config": {
+    "max_epochs": 1,
+    "patience": 3,
+    "min_delta": 0.0001,
+    "batch_size": 32,
+    "lr": 0.0003,
+    "weight_decay": 0.0001,
+    "grad_clip": 1.0,
+    "amp": true,
+    "label_smoothing": 0.02,
+    "device": "cpu"
+  },
+  "early_stopping": {
+    "best_epoch": 1,
+    "best_mean_macro_f1": 0.0,
+    "epochs_ran": 1
+  },
+  "epoch_history": [
+    {
+      "epoch": 1,
+      "mean_macro_f1": 0.0,
+      "avg_train_loss": 0.431084132194519,
+      "bad_batches": 0,
+      "improved": true
+    }
+  ],
+  "files": {
+    "train_files": 5,
+    "eval_files": 0,
+    "days_fitted": 5
+  },
+  "train_rows_seen": {
+    "h10": 960,
+    "h20": 960,
+    "h50": 960,
+    "h100": 960
+  },
+  "eval_rows_seen": {
+    "h10": 0,
+    "h20": 0,
+    "h50": 0,
+    "h100": 0
+  },
+  "train_class_counts": {
+    "h10": [
+      132,
+      694,
+      134
+    ],
+    "h20": [
+      202,
+      534,
+      224
+    ],
+    "h50": [
+      306,
+      325,
+      329
+    ],
+    "h100": [
+      399,
+      172,
+      389
+    ]
+  },
+  "eval_class_counts": {
+    "h10": [
+      0,
+      0,
+      0
+    ],
+    "h20": [
+      0,
+      0,
+      0
+    ],
+    "h50": [
+      0,
+      0,
+      0
+    ],
+    "h100": [
+      0,
+      0,
+      0
+    ]
+  },
+  "bad_batches_total": 0,
+  "test_metrics": {
+    "h10_accuracy": 0.0,
+    "h10_f1_c0": 0.0,
+    "h10_f1_c1": 0.0,
+    "h10_f1_c2": 0.0,
+    "h10_f1_macro": 0.0,
+    "h10_f1_weighted": 0.0,
+    "h20_accuracy": 0.0,
+    "h20_f1_c0": 0.0,
+    "h20_f1_c1": 0.0,
+    "h20_f1_c2": 0.0,
+    "h20_f1_macro": 0.0,
+    "h20_f1_weighted": 0.0,
+    "h50_accuracy": 0.0,
+    "h50_f1_c0": 0.0,
+    "h50_f1_c1": 0.0,
+    "h50_f1_c2": 0.0,
+    "h50_f1_macro": 0.0,
+    "h50_f1_weighted": 0.0,
+    "h100_accuracy": 0.0,
+    "h100_f1_c0": 0.0,
+    "h100_f1_c1": 0.0,
+    "h100_f1_c2": 0.0,
+    "h100_f1_macro": 0.0,
+    "h100_f1_weighted": 0.0
+  },
+  "model_path": "/home/illionar/Projects/multi-horizon-ofi/model_weights/dilated_transformer_TEST_RUN_weights.pt",
+  "runtime_seconds": 77.19
+}

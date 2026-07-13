@@ -1,0 +1,28 @@
+{
+  "timestamp": "2026-07-13T17:50:19.167180",
+  "mode": "day_by_day_streaming_deep_multi_arch_stable_earlystop",
+  "architectures": [
+    "dilated_transformer",
+    "hybrid_cnn_inception_lstm",
+    "seq2seq_attn"
+  ],
+  "horizons": [
+    10,
+    20,
+    50,
+    100
+  ],
+  "seq_len": 100,
+  "alpha": 5e-05,
+  "early_stopping": {
+    "max_epochs": 1,
+    "patience": 3,
+    "min_delta": 0.0001
+  },
+  "results_paths": {
+    "dilated_transformer": "/home/illionar/Projects/multi-horizon-ofi/results/dilated_transformer_results_day_streaming_TEST_RUN.json",
+    "hybrid_cnn_inception_lstm": "/home/illionar/Projects/multi-horizon-ofi/results/hybrid_cnn_inception_lstm_results_day_streaming_TEST_RUN.json",
+    "seq2seq_attn": "/home/illionar/Projects/multi-horizon-ofi/results/seq2seq_attn_results_day_streaming_TEST_RUN.json"
+  },
+  "runtime_seconds": 0.2
+}

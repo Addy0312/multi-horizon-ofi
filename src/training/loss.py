@@ -3,6 +3,26 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 
+from typing import List, Optional
+
+def _deep_class_weights_cb(labels: np.ndarray, cfg: dict) -> List[np.ndarray]:
+    """Effective-Number-of-Samples class weights (Cui et al. CVPR 2019)."""
+    beta  = float(cfg.get("cb_beta", 0.999))
+    min_w = float(cfg.get("cb_min_w", 0.5))
+    max_w = float(cfg.get("cb_max_w", 3.0))
+    eps   = float(cfg.get("cb_eps", 1.0))
+    weights: List[np.ndarray] = []
+    for i in range(labels.shape[1]):
+        y      = labels[:, i]
+        counts = np.bincount(y.astype(np.int64, copy=False), minlength=3).astype(np.float64) + eps
+        eff    = 1.0 - np.power(beta, counts)
+        w      = (1.0 - beta) / np.maximum(eff, 1e-12)
+        w      = w / np.mean(w)
+        w      = np.clip(w, min_w, max_w)
+        weights.append(w.astype(np.float32))
+    return weights
+
+
 def _deep_focal_loss(logits: torch.Tensor, targets: torch.Tensor, weight: torch.Tensor | None=None, gamma: float=2.0, label_smoothing: float=0.0) -> torch.Tensor:
     ce = F.cross_entropy(logits, targets, weight=weight, reduction='none', label_smoothing=float(label_smoothing))
     p_t = torch.exp(-ce)

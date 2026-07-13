@@ -6,9 +6,10 @@ import json
 import pandas as pd
 from typing import List, Tuple, Dict
 from .checkpoint import *
-from .loss import *
+from .loss import _deep_class_weights_cb, _deep_focal_loss, _deep_multihorizon_loss_advanced
 from ..metrics.classification import *
-from ..data.dataset import _deep_build_day_dataset, _deep_build_day_dataset_stable, _deep_make_loader, _deep_resolve_tickers, _deep_collect_files_by_ticker, _deep_split_train_eval_files
+from ..data.dataset import _deep_build_day_dataset, _deep_make_loader, _deep_resolve_tickers, _deep_collect_files_by_ticker, _deep_split_train_eval_files
+from ..data.helpers import _deep_update_confusion, _deep_metrics_from_confusion, _mean_macro_f1
 from ..utils.system import _avail_ram_gb, _deep_cleanup_cuda
 from ..utils.env import DEEP_DEVICE
 from ..models.builder import build_deep_model
@@ -51,7 +52,14 @@ def _train_epoch(model: nn.Module, optimizer: torch.optim.Optimizer, scaler: 'to
             with torch.cuda.amp.autocast(enabled=amp_enabled):
                 logits = model(xb)
                 logits = torch.nan_to_num(logits, nan=0.0, posinf=0.0, neginf=0.0)
-                loss = _deep_multihorizon_loss(logits, yb, cfg, weight_tensors)
+                loss = _deep_multihorizon_loss_advanced(
+                    logits=logits,
+                    targets=yb,
+                    weight_tensors=weight_tensors,
+                    label_smoothing=float(cfg.get('label_smoothing', 0.0)),
+                    loss_mode=str(cfg.get('loss_mode', 'ce')),
+                    focal_gamma=float(cfg.get('focal_gamma', 2.0))
+                )
             if not torch.isfinite(loss):
                 bad_batches += 1
                 del xb, yb, logits, loss
@@ -356,7 +364,7 @@ def train_lstm_autoencoder_day_by_day(cfg: dict, max_epochs: int=5):
         for file_idx, (ticker, path) in enumerate(train_files, start=1):
             if file_idx < start_file_idx:
                 continue
-            ds, stats = _deep_build_day_dataset_stable(path, cfg, is_train=True)
+            ds, stats = _deep_build_day_dataset(path, cfg, is_train=True)
             if ds is None:
                 continue
             mask_c1 = ds.labels[:, target_h_idx] == 1
@@ -397,3 +405,71 @@ def train_lstm_autoencoder_day_by_day(cfg: dict, max_epochs: int=5):
     with open(results_path, 'w') as f:
         json.dump(res, f, indent=2)
 
+
+def run_all_deep_models_day_by_day_stable_earlystop(config: dict, max_epochs: int=10, patience: int=3, min_delta: float=1e-4) -> dict:
+    from ..utils.seed import deep_set_seed
+    import time
+    import pandas as pd
+    import json
+    
+    cfg = dict(config)
+    cfg.setdefault('result_suffix', '_stable_es')
+
+    deep_set_seed(int(cfg['seed']))
+    os.makedirs(cfg['weights_dir'], exist_ok=True)
+    os.makedirs(cfg['results_dir'], exist_ok=True)
+
+    all_runs = {}
+    all_results_paths = {}
+    t0 = time.time()
+    
+    for arch in cfg['run_architectures']:
+        run_meta = train_one_architecture(
+            arch=arch,
+            cfg=cfg,
+            max_epochs=max_epochs,
+            patience=patience,
+            min_delta=min_delta,
+        )
+        all_runs[arch] = run_meta
+        suffix = str(cfg.get('result_suffix', '_stable_es'))
+        if suffix and not suffix.startswith('_'):
+            suffix = '_' + suffix
+        all_results_paths[arch] = os.path.join(cfg['results_dir'], f'{arch}_results_day_streaming{suffix}.json')
+        
+        from ..data.helpers import _deep_cleanup_cuda
+        _deep_cleanup_cuda()
+
+    suffix = str(cfg.get('result_suffix', '_stable_es'))
+    if suffix and not suffix.startswith('_'):
+        suffix = '_' + suffix
+
+    summary = {
+        'timestamp': pd.Timestamp.now().isoformat(),
+        'mode': 'day_by_day_streaming_deep_multi_arch_stable_earlystop',
+        'architectures': list(cfg['run_architectures']),
+        'horizons': list(cfg['horizons']),
+        'seq_len': int(cfg['seq_len']),
+        'alpha': float(cfg['alpha']),
+        'early_stopping': {
+            'max_epochs': int(max_epochs),
+            'patience': int(patience),
+            'min_delta': float(min_delta),
+        },
+        'results_paths': all_results_paths,
+        'runtime_seconds': round(time.time() - t0, 2),
+    }
+
+    summary_path = os.path.join(cfg['results_dir'], f'deep_models_day_streaming_summary{suffix}.json')
+    with open(summary_path, 'w') as f:
+        json.dump(summary, f, indent=2)
+
+    print('\n' + '=' * 88)
+    print('Stable deep early-stop run complete')
+    print(f"Summary saved -> {summary_path}")
+
+    return {
+        'summary_path': summary_path,
+        'summary': summary,
+        'runs': all_runs,
+    }

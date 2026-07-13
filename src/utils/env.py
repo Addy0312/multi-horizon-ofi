@@ -7,3 +7,6 @@ def is_colab() -> bool:
         return True
     except Exception:
         return False
+
+import torch
+DEEP_DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')

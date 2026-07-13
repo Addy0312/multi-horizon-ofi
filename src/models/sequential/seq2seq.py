@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from .deeplob import DeepLOBEncoder
 import math
 
 class Seq2SeqAttentionModel(nn.Module):

@@ -1,6 +1,7 @@
 import os
 import sys
 import torch
+import argparse
 from pathlib import Path
 
 # Add project root to path
@@ -13,6 +14,10 @@ from src.utils.seed import deep_set_seed
 from src.training.trainer import run_all_deep_models_day_by_day_stable_earlystop
 
 def main():
+    parser = argparse.ArgumentParser(description="Run deep learning training pipeline for Multi-Horizon OFI.")
+    parser.add_argument('--test', action='store_true', help="Run in nuked testing mode to verify the pipeline ends-to-end.")
+    args = parser.parse_args()
+
     IN_COLAB = is_colab()
     
     if IN_COLAB:
@@ -63,7 +68,7 @@ def main():
         "focal_gamma":      2.0,
         "label_smoothing":  0.02,
         "seed": 42,
-        "run_architectures": ["dilated_transformer", "cnn_inception_lstm", "seq2seq_attn"],
+        "run_architectures": ["dilated_transformer", "hybrid_cnn_inception_lstm", "seq2seq_attn"],
         "result_suffix": "_stable_es",
         "normalization_method": "robust",
         "enable_smote":   False,
@@ -75,6 +80,19 @@ def main():
         "stationarity_d_fixed": 0.4,
     }
 
+    if args.test:
+        print("\n" + "!" * 50)
+        print("  WARNING: RUNNING IN NUKED TEST MODE  ")
+        print("!" * 50 + "\n")
+        DEEP_CONFIG["max_rows_per_day_train"] = 200
+        DEEP_CONFIG["max_rows_per_day_eval"] = 200
+        DEEP_CONFIG["max_files_per_ticker"] = 1
+        DEEP_CONFIG["batch_size"] = 32
+        DEEP_CONFIG["result_suffix"] = "_TEST_RUN"
+        max_epochs = 1
+    else:
+        max_epochs = 10
+
     print(f"Device: {torch.device('cuda' if torch.cuda.is_available() else 'cpu')}")
     print(f"Architectures: {DEEP_CONFIG['run_architectures']}")
     
@@ -83,7 +101,7 @@ def main():
     # Run pipeline
     run_all_deep_models_day_by_day_stable_earlystop(
         DEEP_CONFIG,
-        max_epochs=10,
+        max_epochs=max_epochs,
         patience=3,
         min_delta=1e-4
     )
