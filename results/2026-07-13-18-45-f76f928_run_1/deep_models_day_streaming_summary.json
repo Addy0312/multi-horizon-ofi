@@ -1,0 +1,28 @@
+{
+  "timestamp": "2026-07-14T02:17:24.557700",
+  "mode": "day_by_day_streaming_deep_multi_arch_stable_earlystop",
+  "architectures": [
+    "dilated_transformer",
+    "hybrid_cnn_inception_lstm",
+    "seq2seq_attn"
+  ],
+  "horizons": [
+    10,
+    20,
+    50,
+    100
+  ],
+  "seq_len": 100,
+  "alpha": 5e-05,
+  "early_stopping": {
+    "max_epochs": 10,
+    "patience": 3,
+    "min_delta": 0.0001
+  },
+  "results_paths": {
+    "dilated_transformer": "/content/drive/MyDrive/multi-horizon-ofi/results/2026-07-13-18-45-f76f928_run_1/dilated_transformer_run_metadata.json",
+    "hybrid_cnn_inception_lstm": "/content/drive/MyDrive/multi-horizon-ofi/results/2026-07-13-18-45-f76f928_run_1/hybrid_cnn_inception_lstm_run_metadata.json",
+    "seq2seq_attn": "/content/drive/MyDrive/multi-horizon-ofi/results/2026-07-13-18-45-f76f928_run_1/seq2seq_attn_run_metadata.json"
+  },
+  "runtime_seconds": 25784.53
+}
