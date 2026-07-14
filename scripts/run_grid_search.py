@@ -19,9 +19,28 @@ from src.training.trainer import run_all_deep_models_day_by_day_stable_earlystop
 def run_grid():
     parser = argparse.ArgumentParser()
     parser.add_argument('--test', action='store_true', help="Run in nuked testing mode to verify the grid search end-to-end.")
+    parser.add_argument('--run-name', type=str, help="Override the entire run folder name (ignores commit/date).")
+    parser.add_argument('--suffix', type=str, help="Add a suffix to the commit/date run name.")
     args = parser.parse_args()
     
     IN_COLAB = is_colab()
+    
+    if args.run_name:
+        base_run_id = args.run_name
+    else:
+        import subprocess
+        try:
+            commit_hash = subprocess.check_output(['git', 'log', '-1', '--format=%h']).decode('utf-8').strip()
+            commit_time = subprocess.check_output(['git', 'log', '-1', '--format=%cd', '--date=format:%Y-%m-%d-%H-%M']).decode('utf-8').strip()
+        except Exception:
+            commit_hash = "unknown"
+            commit_time = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M")
+        
+        base_run_id = f"{commit_time}-{commit_hash}_grid"
+        if args.suffix:
+            base_run_id = f"{base_run_id}_{args.suffix}"
+            
+    print(f"Parent Grid Run ID: {base_run_id}")
     
     # Define the Permutations & Combinations (Grid)
     grid_params = {
@@ -71,8 +90,6 @@ def run_grid():
     print(f"Trials per configuration: {num_trials}")
     print(f"Total pipeline runs: {len(filtered_combinations) * num_trials}")
     
-    base_timestamp = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M")
-    
     for idx, current_cfg_overrides in enumerate(filtered_combinations):
         
         # Build a descriptive run name
@@ -93,7 +110,7 @@ def run_grid():
         
         for trial in range(num_trials):
             current_seed = base_seeds[trial]
-            run_id = f"grid_{base_timestamp}_trial-{trial+1}_{desc}"
+            run_id = f"trial-{trial+1}_{desc}"
             
             print(f"\n  --- Trial {trial+1}/{num_trials} (Seed: {current_seed}) ---")
             print(f"  Run ID: {run_id}")
@@ -102,12 +119,12 @@ def run_grid():
             if IN_COLAB:
                 drive_dir = Path('/content/drive/MyDrive/multi-horizon-ofi')
                 DATA_DIR    = str(drive_dir / 'data' / 'processed')
-                WEIGHTS_DIR = str(drive_dir / 'model_weights' / run_id)
-                RESULTS_DIR = str(drive_dir / 'results' / run_id)
+                WEIGHTS_DIR = str(drive_dir / 'model_weights' / base_run_id / run_id)
+                RESULTS_DIR = str(drive_dir / 'results' / base_run_id / run_id)
             else:
                 DATA_DIR    = str(PROJECT_ROOT / 'data' / 'processed')
-                WEIGHTS_DIR = str(PROJECT_ROOT / 'model_weights' / run_id)
-                RESULTS_DIR = str(PROJECT_ROOT / 'results' / run_id)
+                WEIGHTS_DIR = str(PROJECT_ROOT / 'model_weights' / base_run_id / run_id)
+                RESULTS_DIR = str(PROJECT_ROOT / 'results' / base_run_id / run_id)
             
             Path(WEIGHTS_DIR).mkdir(parents=True, exist_ok=True)
             Path(RESULTS_DIR).mkdir(parents=True, exist_ok=True)

@@ -7,15 +7,34 @@ import sys
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
+import argparse
+
 def compile_grid_results():
-    results_dir = PROJECT_ROOT / 'results'
-    if not results_dir.exists():
-        print("No results directory found.")
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--run-id', type=str, default=None, help="Optional parent grid run ID directory. If not provided, scans for all grid runs.")
+    args = parser.parse_args()
+    
+    base_results_dir = PROJECT_ROOT / 'results'
+    if not base_results_dir.exists():
+        print(f"No results directory found at {base_results_dir}")
         return
         
-    grid_runs = [d for d in results_dir.iterdir() if d.is_dir() and d.name.startswith("grid_")]
+    grid_runs = []
+    
+    if args.run_id:
+        target_dir = base_results_dir / args.run_id
+        if target_dir.exists():
+            grid_runs.extend([d for d in target_dir.iterdir() if d.is_dir() and (d.name.startswith("trial-") or d.name.startswith("grid_"))])
+    else:
+        # Scan for stray top-level grid runs
+        grid_runs.extend([d for d in base_results_dir.iterdir() if d.is_dir() and d.name.startswith("grid_")])
+        # Scan for new-style nested trial runs inside parent grid folders
+        for parent_dir in base_results_dir.iterdir():
+            if parent_dir.is_dir() and "grid" in parent_dir.name.lower():
+                grid_runs.extend([d for d in parent_dir.iterdir() if d.is_dir() and d.name.startswith("trial-")])
+                
     if not grid_runs:
-        print("No grid runs found in results directory.")
+        print("No grid/trial runs found.")
         return
         
     all_results = []
@@ -44,11 +63,13 @@ def compile_grid_results():
                             if acc_keys:
                                 avg_acc = sum(metrics[k] for k in acc_keys) / len(acc_keys)
                     
-                    # Extract the configuration identifier (everything after 'trial-X_')
-                    parts = run_dir.name.split("_trial-")
-                    if len(parts) > 1:
-                        trial_str = parts[1].split("_")[0]
-                        config_desc = parts[1][len(trial_str)+1:]
+                    # Extract the configuration identifier
+                    if "trial-" in run_dir.name:
+                        parts = run_dir.name.split("trial-")[1].split("_", 1)
+                        if len(parts) > 1:
+                            config_desc = parts[1]
+                        else:
+                            config_desc = run_dir.name
                     else:
                         config_desc = run_dir.name
                         
@@ -118,7 +139,11 @@ def compile_grid_results():
     
     grouped = grouped.sort_values(by="Mean_Macro_F1_mean", ascending=False)
     
-    out_csv = results_dir / "grid_leaderboard_aggregated.csv"
+    if args.run_id:
+        out_csv = base_results_dir / args.run_id / "grid_leaderboard_aggregated.csv"
+    else:
+        out_csv = base_results_dir / "all_grids_leaderboard_aggregated.csv"
+        
     grouped.to_csv(out_csv, index=False)
     
     # Create a clean display dataframe
