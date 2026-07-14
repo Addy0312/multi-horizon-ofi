@@ -129,6 +129,12 @@ def run_grid():
             Path(WEIGHTS_DIR).mkdir(parents=True, exist_ok=True)
             Path(RESULTS_DIR).mkdir(parents=True, exist_ok=True)
             
+            # Fast-path check: Is this trial entirely completed?
+            archs_to_run = current_cfg_overrides.get("run_architectures", ["mlp_baseline"])
+            if not TEST_MODE and all((Path(RESULTS_DIR) / f"{arch}_run_metadata.json").exists() for arch in archs_to_run):
+                print(f"  -> Trial already fully completed! Skipping.")
+                continue
+            
             # Base config
             DEEP_CONFIG = {
                 "data_dir":    DATA_DIR,
