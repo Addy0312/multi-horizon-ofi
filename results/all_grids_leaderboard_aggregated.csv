@@ -1,0 +1,4 @@
+Config_Desc,Architecture,Mean_Macro_F1_mean,Mean_Macro_F1_std,Avg_Accuracy_mean,Avg_Accuracy_std,Avg_R2_mean,Avg_R2_std,Epochs_Ran_mean,Loss_Mode,Normalization,SMOTE,SMOTE_Method,Stationarity,Seq_Len,LR,Batch_Size,Trials
+batc-128_enab-F_enab-F_loss-ce_lr-3.0e-04_norm-robust_seq_-50_smot-none,dilated_transformer,0.2870190026295486,,0.43960625,,0.0,,4.0,,,,,,50,0.0003,128,1
+batc-128_enab-F_enab-F_loss-ce_lr-3.0e-04_norm-robust_seq_-50_smot-none,tcn_baseline,0.2855179315079322,,0.48479625,,0.0,,4.0,,,,,,50,0.0003,128,1
+batc-128_enab-F_enab-F_loss-ce_lr-3.0e-04_norm-robust_seq_-50_smot-none,mlp_baseline,0.25381838943135676,,0.40925,,0.0,,4.0,,,,,,50,0.0003,128,1

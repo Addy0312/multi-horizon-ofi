@@ -26,11 +26,31 @@ def compile_grid_results():
         if target_dir.exists():
             grid_runs.extend([d for d in target_dir.iterdir() if d.is_dir() and (d.name.startswith("trial-") or d.name.startswith("grid_"))])
     else:
-        # Scan for stray top-level grid runs
-        grid_runs.extend([d for d in base_results_dir.iterdir() if d.is_dir() and d.name.startswith("grid_")])
+        # Scan for stray top-level grid runs and move them to legacy
+        stray_runs = [d for d in base_results_dir.iterdir() if d.is_dir() and d.name.startswith("grid_")]
+        if stray_runs:
+            import shutil
+            legacy_res_dir = base_results_dir / "legacy_grid_runs"
+            legacy_res_dir.mkdir(exist_ok=True)
+            legacy_weights_dir = PROJECT_ROOT / 'model_weights' / "legacy_grid_runs"
+            legacy_weights_dir.mkdir(exist_ok=True, parents=True)
+            
+            print(f"Found {len(stray_runs)} stray grid runs. Moving them to {legacy_res_dir.name}/")
+            for run_dir in stray_runs:
+                # Move result dir
+                dest_res = legacy_res_dir / run_dir.name
+                shutil.move(str(run_dir), str(dest_res))
+                
+                # Try to move corresponding weights dir
+                weight_dir = PROJECT_ROOT / 'model_weights' / run_dir.name
+                if weight_dir.exists():
+                    shutil.move(str(weight_dir), str(legacy_weights_dir / run_dir.name))
+            
+            grid_runs.extend([d for d in legacy_res_dir.iterdir() if d.is_dir() and d.name.startswith("grid_")])
+
         # Scan for new-style nested trial runs inside parent grid folders
         for parent_dir in base_results_dir.iterdir():
-            if parent_dir.is_dir() and "grid" in parent_dir.name.lower():
+            if parent_dir.is_dir() and "grid" in parent_dir.name.lower() and parent_dir.name != "legacy_grid_runs":
                 grid_runs.extend([d for d in parent_dir.iterdir() if d.is_dir() and d.name.startswith("trial-")])
                 
     if not grid_runs:
