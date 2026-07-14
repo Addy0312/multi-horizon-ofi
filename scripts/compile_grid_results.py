@@ -2,11 +2,13 @@ import os
 import json
 import pandas as pd
 import numpy as np
-from pathlib import Path
 import sys
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
+from src.utils.env import is_colab
 import argparse
 
 def compile_grid_results():
@@ -14,7 +16,15 @@ def compile_grid_results():
     parser.add_argument('--run-id', type=str, default=None, help="Optional parent grid run ID directory. If not provided, scans for all grid runs.")
     args = parser.parse_args()
     
-    base_results_dir = PROJECT_ROOT / 'results'
+    IN_COLAB = is_colab()
+    if IN_COLAB:
+        base_dir = Path('/content/drive/MyDrive/multi-horizon-ofi')
+    else:
+        base_dir = PROJECT_ROOT
+        
+    base_results_dir = base_dir / 'results'
+    base_weights_dir = base_dir / 'model_weights'
+    
     if not base_results_dir.exists():
         print(f"No results directory found at {base_results_dir}")
         return
@@ -32,7 +42,7 @@ def compile_grid_results():
             import shutil
             legacy_res_dir = base_results_dir / "legacy_grid_runs"
             legacy_res_dir.mkdir(exist_ok=True)
-            legacy_weights_dir = PROJECT_ROOT / 'model_weights' / "legacy_grid_runs"
+            legacy_weights_dir = base_weights_dir / "legacy_grid_runs"
             legacy_weights_dir.mkdir(exist_ok=True, parents=True)
             
             print(f"Found {len(stray_runs)} stray grid runs. Moving them to {legacy_res_dir.name}/")
@@ -42,7 +52,7 @@ def compile_grid_results():
                 shutil.move(str(run_dir), str(dest_res))
                 
                 # Try to move corresponding weights dir
-                weight_dir = PROJECT_ROOT / 'model_weights' / run_dir.name
+                weight_dir = base_weights_dir / run_dir.name
                 if weight_dir.exists():
                     shutil.move(str(weight_dir), str(legacy_weights_dir / run_dir.name))
             
