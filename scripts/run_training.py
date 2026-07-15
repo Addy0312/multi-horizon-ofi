@@ -35,6 +35,7 @@ def main():
     parser.add_argument('--seq-len', type=int, default=100, help="Sequence length")
     parser.add_argument('--batch-size', type=int, default=256, help="Batch size")
     parser.add_argument('--seed', type=int, default=42, help="Random seed")
+    parser.add_argument('--randomize-split', type=str2bool, default=True, help="Randomize train/test split")
     
     args = parser.parse_args()
 
@@ -115,6 +116,7 @@ def main():
         "enable_stationarity": args.stationarity,
         "stationarity_method": "auto",
         "stationarity_d_fixed": 0.4,
+        "randomize_split": args.randomize_split,
     }
 
     if args.test:
