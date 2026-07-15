@@ -59,18 +59,18 @@ def apply_borderline_smote(X, y, sampling_strategy='auto', k_neighbors=5, random
         print_class_distribution(yr, 'After Borderline-SMOTE')
     return (Xr.astype(np.float32), yr.astype(np.int32))
 
-def apply_adasyn(X, y, sampling_strategy='auto', n_neighbors=5, random_state=42, verbose=True):
+def apply_adasyn(X, y, sampling_strategy='auto', k_neighbors=5, random_state=42, verbose=True):
     if not _smote_available():
         raise ImportError('pip install imbalanced-learn')
     from imblearn.over_sampling import ADASYN
     if verbose:
         print_class_distribution(y, 'Before ADASYN')
-    sm = ADASYN(sampling_strategy=sampling_strategy, n_neighbors=n_neighbors, random_state=random_state)
+    sm = ADASYN(sampling_strategy=sampling_strategy, n_neighbors=k_neighbors, random_state=random_state)
     try:
         Xr, yr = sm.fit_resample(X, y)
     except ValueError:
         warnings.warn('ADASYN failed, falling back to SMOTE')
-        return apply_smote(X, y, sampling_strategy=sampling_strategy, k_neighbors=n_neighbors, random_state=random_state, verbose=False)
+        return apply_smote(X, y, sampling_strategy=sampling_strategy, k_neighbors=k_neighbors, random_state=random_state, verbose=False)
     if verbose:
         print_class_distribution(yr, 'After ADASYN')
     return (Xr.astype(np.float32), yr.astype(np.int32))
