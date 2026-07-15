@@ -15,11 +15,27 @@ from src.utils.env import is_colab
 from src.utils.seed import deep_set_seed
 from src.training.trainer import run_all_deep_models_day_by_day_stable_earlystop
 
+def str2bool(v): 
+    return str(v).lower() in ("yes", "true", "t", "1")
+
 def main():
-    parser = argparse.ArgumentParser(description="Run deep learning training pipeline for Multi-Horizon OFI.")
+    parser = argparse.ArgumentParser(description="Run deep learning training pipeline for Multi-Horizon OFI.", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--test', action='store_true', help="Run in nuked testing mode to verify the pipeline ends-to-end.")
-    parser.add_argument('--run-name', type=str, help="Override the entire run folder name (ignores commit/date).")
+    parser.add_argument('--run-name', type=str, help="Override the entire run folder name (ignores commit/date). Use this to RESUME a previous run!")
     parser.add_argument('--suffix', type=str, help="Append a suffix to the auto-generated run ID.")
+    
+    # Training Parameters
+    parser.add_argument('--models', nargs='+', default=["dilated_transformer", "hybrid_cnn_inception_lstm", "seq2seq_attn"], help="Architectures to run")
+    parser.add_argument('--loss-mode', type=str, default="cb_focal", help="Loss mode")
+    parser.add_argument('--norm', type=str, default="robust", help="Normalization method")
+    parser.add_argument('--smote', type=str2bool, default=False, help="Enable SMOTE (True/False)")
+    parser.add_argument('--smote-method', type=str, default="smote", help="SMOTE method (smote/adasyn)")
+    parser.add_argument('--stationarity', type=str2bool, default=False, help="Enable stationarity (True/False)")
+    parser.add_argument('--lr', type=float, default=3e-4, help="Learning rate")
+    parser.add_argument('--seq-len', type=int, default=100, help="Sequence length")
+    parser.add_argument('--batch-size', type=int, default=256, help="Batch size")
+    parser.add_argument('--seed', type=int, default=42, help="Random seed")
+    
     args = parser.parse_args()
 
     # Generate logical run ID
@@ -67,7 +83,7 @@ def main():
         "tickers": None,
         "horizons": [10, 20, 50, 100],
         "alpha": 0.00005,
-        "seq_len": 100,
+        "seq_len": args.seq_len,
         "train_file_fraction": 0.8,
         "base_subsample":             4,
         "high_pressure_subsample":    8,
@@ -75,28 +91,28 @@ def main():
         "max_rows_per_day_train":  8000,
         "max_rows_per_day_eval":  10000,
         "max_files_per_ticker":       0,
-        "batch_size":   256,
+        "batch_size":   args.batch_size,
         "num_workers":  0,
-        "lr":            3e-4,
+        "lr":            args.lr,
         "weight_decay":  1e-4,
         "grad_clip":     1.0,
         "amp":           True,
-        "loss_mode":       "cb_focal",
+        "loss_mode":       args.loss_mode,
         "cb_beta":          0.999,
         "cb_min_w":         0.5,
         "cb_max_w":         3.0,
         "cb_eps":           1.0,
         "focal_gamma":      2.0,
         "label_smoothing":  0.02,
-        "seed": 42,
-        "run_architectures": ["dilated_transformer", "hybrid_cnn_inception_lstm", "seq2seq_attn"],
+        "seed": args.seed,
+        "run_architectures": args.models,
         "result_suffix": "_stable_es",
-        "normalization_method": "robust",
-        "enable_smote":   False,
-        "smote_method":   "smote",
+        "normalization_method": args.norm,
+        "enable_smote":   args.smote,
+        "smote_method":   args.smote_method,
         "smote_k":        5,
         "smote_min_per_class": 10,
-        "enable_stationarity": False,
+        "enable_stationarity": args.stationarity,
         "stationarity_method": "auto",
         "stationarity_d_fixed": 0.4,
     }

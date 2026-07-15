@@ -17,10 +17,23 @@ from src.utils.seed import deep_set_seed
 from src.training.trainer import run_all_deep_models_day_by_day_stable_earlystop
 
 def run_grid():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--test', action='store_true', help="Run in nuked testing mode to verify the grid search end-to-end.")
-    parser.add_argument('--run-name', type=str, help="Override the entire run folder name (ignores commit/date).")
+    parser.add_argument('--run-name', type=str, help="Override the entire run folder name (ignores commit/date). Use this to RESUME a previous grid search!")
     parser.add_argument('--suffix', type=str, help="Add a suffix to the commit/date run name.")
+    
+    # Grid Parameters
+    parser.add_argument('--trials', type=int, default=3, help="Number of trials per configuration")
+    parser.add_argument('--models', nargs='+', default=["mlp_baseline", "tcn_baseline", "dilated_transformer", "hybrid_cnn_inception_lstm"], help="Architectures to run")
+    parser.add_argument('--loss-modes', nargs='+', default=["ce", "cb_focal"], help="Loss modes to sweep")
+    parser.add_argument('--norms', nargs='+', default=["robust", "zscore"], help="Normalization methods")
+    parser.add_argument('--smote', nargs='+', default=["False", "True"], help="Enable SMOTE (e.g. False True)")
+    parser.add_argument('--smote-methods', nargs='+', default=["smote", "adasyn"], help="SMOTE methods")
+    parser.add_argument('--stationarity', nargs='+', default=["False", "True"], help="Enable stationarity (e.g. False True)")
+    parser.add_argument('--lrs', nargs='+', type=float, default=[3e-4, 1e-4], help="Learning rates")
+    parser.add_argument('--seq-lens', nargs='+', type=int, default=[50, 100], help="Sequence lengths")
+    parser.add_argument('--batch-sizes', nargs='+', type=int, default=[128, 256], help="Batch sizes")
+    
     args = parser.parse_args()
     
     IN_COLAB = is_colab()
@@ -43,24 +56,24 @@ def run_grid():
     print(f"Parent Grid Run ID: {base_run_id}")
     
     # Define the Permutations & Combinations (Grid)
+    def str2bool(v): return v.lower() in ("yes", "true", "t", "1")
     grid_params = {
-        "loss_mode": ["ce", "cb_focal"],
-        "normalization_method": ["robust", "zscore"],
-        "enable_smote": [False, True],
-        "smote_method": ["smote", "adasyn"],
-        "enable_stationarity": [False, True],
-        "lr": [3e-4, 1e-4],
-        "seq_len": [50, 100],
-        "batch_size": [128, 256],
+        "loss_mode": args.loss_modes,
+        "normalization_method": args.norms,
+        "enable_smote": [str2bool(v) for v in args.smote],
+        "smote_method": args.smote_methods,
+        "enable_stationarity": [str2bool(v) for v in args.stationarity],
+        "lr": args.lrs,
+        "seq_len": args.seq_lens,
+        "batch_size": args.batch_sizes,
         "randomize_split": [True],
-        "run_architectures": [
-            ["mlp_baseline", "tcn_baseline", "dilated_transformer", "hybrid_cnn_inception_lstm"]
-        ]
+        "run_architectures": [args.models]
     }
     
     # Number of random seeds to test per configuration
-    num_trials = 3
-    base_seeds = [42, 100, 999]
+    num_trials = args.trials
+    all_seeds = [42, 100, 999, 1234, 5678, 1337, 777, 888, 9999, 1111]
+    base_seeds = all_seeds[:num_trials]
     
     TEST_MODE = args.test
     
