@@ -1,0 +1,30 @@
+{
+  "timestamp": "2026-07-18T11:09:29.388070",
+  "mode": "day_by_day_streaming_deep_multi_arch_stable_earlystop",
+  "architectures": [
+    "mlp_baseline",
+    "tcn_baseline",
+    "dilated_transformer",
+    "hybrid_cnn_inception_lstm"
+  ],
+  "horizons": [
+    10,
+    20,
+    50,
+    100
+  ],
+  "seq_len": 50,
+  "alpha": 5e-05,
+  "early_stopping": {
+    "max_epochs": 10,
+    "patience": 3,
+    "min_delta": 0.0001
+  },
+  "results_paths": {
+    "mlp_baseline": "/content/drive/MyDrive/multi-horizon-ofi/results/2026-07-15-17-31-55428ac_grid/trial-2_batc-128_enab-T_enab-F_loss-cb_focal_lr-3.0e-04_norm-robust_seq_-50_smot-adasyn/mlp_baseline_run_metadata.json",
+    "tcn_baseline": "/content/drive/MyDrive/multi-horizon-ofi/results/2026-07-15-17-31-55428ac_grid/trial-2_batc-128_enab-T_enab-F_loss-cb_focal_lr-3.0e-04_norm-robust_seq_-50_smot-adasyn/tcn_baseline_run_metadata.json",
+    "dilated_transformer": "/content/drive/MyDrive/multi-horizon-ofi/results/2026-07-15-17-31-55428ac_grid/trial-2_batc-128_enab-T_enab-F_loss-cb_focal_lr-3.0e-04_norm-robust_seq_-50_smot-adasyn/dilated_transformer_run_metadata.json",
+    "hybrid_cnn_inception_lstm": "/content/drive/MyDrive/multi-horizon-ofi/results/2026-07-15-17-31-55428ac_grid/trial-2_batc-128_enab-T_enab-F_loss-cb_focal_lr-3.0e-04_norm-robust_seq_-50_smot-adasyn/hybrid_cnn_inception_lstm_run_metadata.json"
+  },
+  "runtime_seconds": 12766.37
+}

@@ -1,0 +1,94 @@
+{
+  "timestamp": "2026-07-19T06:43:30.413733",
+  "mode": "day_by_day_streaming_deep_stable_earlystop",
+  "architecture": "tcn_baseline",
+  "horizons": [
+    10,
+    20,
+    50,
+    100
+  ],
+  "seq_len": 50,
+  "alpha": 5e-05,
+  "train_config": {
+    "max_epochs": 10,
+    "patience": 3,
+    "min_delta": 0.0001,
+    "batch_size": 128,
+    "lr": 0.0003,
+    "weight_decay": 0.0001,
+    "grad_clip": 1.0,
+    "amp": true,
+    "label_smoothing": 0.02,
+    "device": "cpu"
+  },
+  "early_stopping": {
+    "best_epoch": 5,
+    "best_mean_macro_f1": 0.37253045906840265,
+    "epochs_ran": 8
+  },
+  "files": {
+    "train_files": 76,
+    "eval_files": 20,
+    "days_fitted": 304
+  },
+  "train_rows_seen": {
+    "h10": 6110208,
+    "h20": 6110208,
+    "h50": 6110208,
+    "h100": 6110208
+  },
+  "eval_rows_seen": {
+    "h10": 200000,
+    "h20": 200000,
+    "h50": 200000,
+    "h100": 200000
+  },
+  "train_class_counts": {
+    "h10": [
+      2032612,
+      2037155,
+      2040441
+    ],
+    "h20": [
+      2190885,
+      1722341,
+      2196982
+    ],
+    "h50": [
+      2466738,
+      1173711,
+      2469759
+    ],
+    "h100": [
+      2636789,
+      834526,
+      2638893
+    ]
+  },
+  "eval_class_counts": {
+    "h10": [
+      16369,
+      166843,
+      16788
+    ],
+    "h20": [
+      28753,
+      141814,
+      29433
+    ],
+    "h50": [
+      50318,
+      97815,
+      51867
+    ],
+    "h100": [
+      64059,
+      69342,
+      66599
+    ]
+  },
+  "bad_batches_total": 0,
+  "model_path": "/content/drive/MyDrive/multi-horizon-ofi/model_weights/2026-07-15-17-31-55428ac_grid/trial-3_batc-128_enab-T_enab-F_loss-cb_focal_lr-3.0e-04_norm-robust_seq_-50_smot-adasyn/tcn_baseline_weights.pt",
+  "runtime_seconds": 16496.47
+}
